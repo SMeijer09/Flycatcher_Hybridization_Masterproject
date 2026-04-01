@@ -1,6 +1,7 @@
 library(tidyverse)
 library(lme4)
 library(lmerTest)
+library(patchwork)
 data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b))
@@ -66,8 +67,9 @@ data1 <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hy
          tarsus = as.numeric(tarsus),
          wing = as.numeric(wing),
          mass = as.numeric(mass),
-         beak = as.numeric(beak)) |>
-  filter(species == "PF" | species == "CF") |>  
+         beak = as.numeric(beak),
+         patch_size = patch_h*patch_b) |>
+  filter(species == "PF" | species == "CF")
 
 
 view(data1)
@@ -106,6 +108,8 @@ hist(plotdata$wing,breaks=100)
 hist(plotdata$mass,breaks=500)
 hist(plotdata$beak,breaks=500)
 
+
+
 boxplot(plotdata$mass ~ plotdata$sex,outline=FALSE)
 boxplot(plotdata$beak ~ plotdata$sex)
 
@@ -130,3 +134,59 @@ ggplot(plotdata, aes(x=wing, y=beak, color=species)) +
   geom_point() +
   theme_minimal() +
   labs(title="Wing length vs Beak length by species", x="Wing length (mm)", y="Beak length (mm)")
+
+#filter data1_clean to only include entries with hybridnest = 1 and species PF are paired with one CF
+data_hybrid <- data1_clean |>
+  group_by(yearAreaBox) |>
+  filter(any(sex == "female" & species == "PF")) |>
+  mutate(
+    pair = case_when(
+      first(n_birds) == 1 ~ "unknown",
+      first(n_birds) > 2 ~ "extra_pair",
+      any(sex == "male" & species == "CF") ~ "fPF_mCF",
+      TRUE ~ "fPF_mPF"
+    ),
+    pair_ID = cur_group_id()
+  )
+
+view(data_hybrid)
+
+model_data <- data_hybrid |>
+  filter(pair == "fPF_mCF" | pair == "fPF_mPF",
+         sex=="male") 
+view(model_data)
+
+ggplot(model_data, aes(x=pair, y=mass)) +
+  geom_boxplot() +
+  labs(title="Mass by pair type", x="Pair type", y="Mass (g)") +
+  theme_minimal()
+
+ggplot(model_data, aes(x=pair, y=patch_size)) +
+  geom_boxplot() +
+  labs(title="Patch Size by pair type", x="Pair type", y="Patch size") +
+  theme_minimal()
+
+ggplot(model_data, aes(x=pair, y=sum_of_white_on_primaries)) +
+  geom_boxplot() +
+  labs(title="Wing patch by pair type", x="Pair type", y="Wing patch") +
+  theme_minimal()
+
+p1 <- ggplot(subset(model_data,patch_size<300), aes(x=sum_of_white_on_primaries,y=patch_size,color=pair)) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE) +
+  labs(title="Wing patch vs Patch size", x="Wing patch", y="Patch size") +
+  theme_minimal()
+
+paired_male_data <- data1_clean |>
+  filter(sex=="male" & n_birds==2) 
+
+p2 <- ggplot(subset(paired_male_data,patch_size<300 & sum_of_white_on_primaries<150), aes(x=sum_of_white_on_primaries,y=patch_size,color=species)) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE) +
+  labs(title="Wing patch vs Patch size", x="Wing patch", y="Patch size") +
+  theme_minimal()
+
+p1 + p2
+
+
+
