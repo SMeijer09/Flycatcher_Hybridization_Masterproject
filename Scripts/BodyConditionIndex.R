@@ -75,3 +75,20 @@ pied_data$PC1 <- pied_pca$x[, 1]
 plot(log(collared_data$PC1), log(collared_data$mass))
 plot(log(pied_data$PC1), log(pied_data$mass))
 #no strong correlations
+
+#multiple regression maybe?
+
+model <- lmer(mass ~ tarsus + wing + tail + (1|ring_nb) + (1|year), data = collared_data)
+par(mfrow=c(2,2))
+plot(model)
+vif(model)
+collared_data$BCI <- residuals(model)
+summary(model)
+
+hist(collared_data$BCI)
+
+cor(collared_data$mass, collared_data$BCI, use="complete.obs")
+plot(collared_data$mass, collared_data$BCI)
+#not good either
+
+
