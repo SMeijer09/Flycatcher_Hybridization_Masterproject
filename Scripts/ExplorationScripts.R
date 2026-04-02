@@ -2,6 +2,7 @@ library(tidyverse)
 library(lme4)
 library(lmerTest)
 library(patchwork)
+library(car)
 data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b))
@@ -188,5 +189,32 @@ p2 <- ggplot(subset(paired_male_data,patch_size<300 & sum_of_white_on_primaries<
 
 p1 + p2
 
+ggplot(subset(paired_male_data,mass<60), aes(x=mass,y=tail,color=species)) +
+  geom_point(alpha=0.3) +
+  geom_smooth(method="lm", se=FALSE) +
+  theme_minimal()
 
+ggplot(paired_male_data, aes(x=species,y=tarsus)) +
+         geom_boxplot(outliers=FALSE) +
+         labs(title="Mass by species", x="Species") +
+         theme_minimal()
 
+#test collinearity between the morphological traits
+cor_data <- paired_male_data |>
+  select(mass, beak, tarsus, tail, wing) |>
+  filter(mass>0 & mass<100,
+         beak>0 & beak<30,
+         tarsus>2 & tarsus<40,
+         tail>10 & tail<90,
+         wing>60 & wing<90)
+cor_matrix <- cor(cor_data, use = "complete.obs")
+cor_matrix
+pairs(cor_data)
+
+model <- lm(mass ~ beak + tarsus + tail + wing, data = paired_male_data)
+vif(model)
+
+m1 <- glm(hybridnest ~ patch_size, data = subset(model_data,patch_size<300), family=binomial)
+summary(m1)
+par(mfrow=c(2,2))
+plot(m1)
