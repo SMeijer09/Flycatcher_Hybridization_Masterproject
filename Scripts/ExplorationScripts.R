@@ -3,6 +3,7 @@ library(lme4)
 library(lmerTest)
 library(patchwork)
 library(car)
+library(emmeans)
 data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b))
@@ -307,4 +308,3 @@ summary(mass_PFCF_model)
 plot(residuals(mass_PFCF_model))
 qqnorm(residuals(mass_PFCF_model))
 qqline(residuals(mass_PFCF_model))
-
