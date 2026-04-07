@@ -218,3 +218,31 @@ m1 <- glm(hybridnest ~ patch_size, data = subset(model_data,patch_size<300), fam
 summary(m1)
 par(mfrow=c(2,2))
 plot(m1)
+
+### test plots again###
+
+ggplot(paired_male_data, aes(x=species, y=sum_of_white_on_primaries, color=species)) +
+  geom_boxplot(outliers=FALSE)
+
+view(model_data)
+
+ggplot(subset(model_data,species=="CF"),aes(x=factor(age_category))) +
+  geom_bar()
+#count the numbers
+paired_male_data |>
+  group_by(species, age_category,hybridnest) |>
+  summarise(n = n()) 
+ggplot(paired_male_data, aes(x=factor(age_category), fill=species)) +
+  geom_bar(position="dodge") +
+  facet_wrap(~hybridnest) +
+  labs(title="Age category distribution by species and hybridization status", x="Age category", y="Count") +
+  theme_minimal()
+
+ggplot(paired_male_data, aes(x=factor(age_category), y=sum_of_white_on_primaries)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~species) 
+
+
+ggplot(subset(paired_male_data,species=="CF"), aes(x=factor(hybridnest), y=sum_of_white_on_primaries)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
