@@ -160,17 +160,32 @@ view(model_data)
 ggplot(model_data, aes(x=pair, y=mass)) +
   geom_boxplot() +
   labs(title="Mass by pair type", x="Pair type", y="Mass (g)") +
-  theme_minimal()
+  facet_wrap(~age_category)
 
 ggplot(model_data, aes(x=pair, y=patch_size)) +
   geom_boxplot() +
   labs(title="Patch Size by pair type", x="Pair type", y="Patch size") +
-  theme_minimal()
+  facet_wrap(~age_category)
 
 ggplot(model_data, aes(x=pair, y=sum_of_white_on_primaries)) +
   geom_boxplot() +
   labs(title="Wing patch by pair type", x="Pair type", y="Wing patch") +
-  theme_minimal()
+  theme_minimal() + facet_wrap(~age_category)
+
+ggplot(model_data, aes(x=pair, y=wing)) +
+  geom_boxplot() +
+  labs(title="Wing length by pair type", x="Pair type", y="Wing length (mm)") +
+  facet_wrap(~age_category)
+
+ggplot(model_data, aes(x=pair, y=beak)) +
+  geom_boxplot() +
+  labs(title="Beak length by pair type", x="Pair type", y="Beak length (mm)") +
+  facet_wrap(~age_category)
+
+ggplot(model_data, aes(x=pair, y=tarsus)) +
+  geom_boxplot() +
+  labs(title="Tarsus length by pair type", x="Pair type", y="Tarsus length (mm)") +
+  facet_wrap(~age_category)
 
 p1 <- ggplot(subset(model_data,patch_size<300), aes(x=sum_of_white_on_primaries,y=patch_size,color=pair)) +
   geom_point() +
@@ -188,7 +203,7 @@ p2 <- ggplot(subset(paired_male_data,patch_size<300 & sum_of_white_on_primaries<
   theme_minimal()
 
 p1 + p2
-
+p1
 ggplot(subset(paired_male_data,mass<60), aes(x=mass,y=tail,color=species)) +
   geom_point(alpha=0.3) +
   geom_smooth(method="lm", se=FALSE) +
@@ -246,3 +261,50 @@ ggplot(paired_male_data, aes(x=factor(age_category), y=sum_of_white_on_primaries
 ggplot(subset(paired_male_data,species=="CF"), aes(x=factor(hybridnest), y=sum_of_white_on_primaries)) +
   geom_boxplot(outliers=FALSE) +
   facet_wrap(~age_category) 
+
+wingpatch_model <- lmer(sum_of_white_on_primaries ~ hybridnest*age_category + (1|ring_nb),data=subset(paired_male_data,species=="CF"))
+summary(wingpatch_model)
+plot(residuals(wingpatch_model))
+qqnorm(residuals(wingpatch_model))
+qqline(residuals(wingpatch_model))
+
+patch_size_model <- lmer(patch_size ~ hybridnest + (1|ring_nb),data=subset(paired_male_data,species=="CF"))
+summary(patch_size_model)
+plot(residuals(patch_size_model))
+qqnorm(residuals(patch_size_model))
+qqline(residuals(patch_size_model))
+
+
+wingpatch_PFCF_model <- lmer(sum_of_white_on_primaries ~ species*age_category + (1|ring_nb),data=model_data)
+summary(wingpatch_PFCF_model)
+plot(residuals(wingpatch_PFCF_model))
+qqnorm(residuals(wingpatch_PFCF_model))
+qqline(residuals(wingpatch_PFCF_model))
+
+patch_size_PFCF_model <- lmer(patch_size ~ species + (1|ring_nb),data=model_data)
+summary(patch_size_PFCF_model)
+
+tarsus_PFCF_model <- lmer(tarsus ~ species + (1|ring_nb),data=model_data)
+summary(tarsus_PFCF_model)
+plot(residuals(tarsus_PFCF_model))
+qqnorm(residuals(tarsus_PFCF_model))
+qqline(residuals(tarsus_PFCF_model))
+
+beak_PFCF_model <- lmer(beak ~ species + (1|ring_nb),data=model_data)
+summary(beak_PFCF_model)
+plot(residuals(beak_PFCF_model))
+qqnorm(residuals(beak_PFCF_model))
+qqline(residuals(beak_PFCF_model))
+
+wing_PFCF_model <- lmer(wing ~ species + (1|ring_nb),data=model_data)
+summary(wing_PFCF_model)
+plot(residuals(wing_PFCF_model))
+qqnorm(residuals(wing_PFCF_model))
+qqline(residuals(wing_PFCF_model))
+
+mass_PFCF_model <- lmer(mass ~ species + (1|ring_nb),data=model_data)
+summary(mass_PFCF_model)
+plot(residuals(mass_PFCF_model))
+qqnorm(residuals(mass_PFCF_model))
+qqline(residuals(mass_PFCF_model))
+
