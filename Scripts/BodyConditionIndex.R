@@ -47,7 +47,12 @@ pied_data <- paired_male_data |> filter(species=="PF")
 view(collared_data)
 
 str(collared_data)
-
+pairs(~ mass + tarsus + wing + tail + beak, data = paired_male_data)
+plot(log(paired_male_data$tarsus),log(paired_male_data$mass))
+plot(log(paired_male_data$wing),log(paired_male_data$mass))
+plot(log(paired_male_data$tail),log(paired_male_data$mass))
+plot(log(paired_male_data$beak),log(paired_male_data$mass))
+cor(paired_male_data[, c("mass", "tarsus", "wing", "tail", "beak")], use = "complete.obs")
 
 pairs(~ mass + tarsus + wing + tail + beak, data = collared_data)
 plot(log(collared_data$tarsus), log(collared_data$mass))
@@ -89,6 +94,6 @@ hist(collared_data$BCI)
 
 cor(collared_data$mass, collared_data$BCI, use="complete.obs")
 plot(collared_data$mass, collared_data$BCI)
-#not good either
+#not good either?
 
 
