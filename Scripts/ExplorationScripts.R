@@ -337,11 +337,12 @@ qqnorm(residuals(mass_PFCF_model))
 qqline(residuals(mass_PFCF_model))
 
 
-#count how many individuals have multiple entries in a single year
-paired_male_data |> 
+#Hybrid paired males that have more than 1 entry in a year, double paired?
+a <- paired_male_data |> 
   group_by(ring_nb, year) |>
-  summarise(n_entries = n()) |>
-  filter(n_entries > 1) |> print(n=134)
+  mutate(n_entries = n()) |>
+  filter(n_entries > 1 & hybridnest==1) 
+view(a)
 
 #### Making the plots again but adjusted for mass or tarsus
 adj_tarsus_male_data <- paired_male_data |>
