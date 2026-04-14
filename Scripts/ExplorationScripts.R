@@ -302,12 +302,14 @@ plot(residuals(beak_model))
 qqnorm(residuals(beak_model))
 qqline(residuals(beak_model))
 
-wingpatch_PFCF_model <- lmer(sum_of_white_on_primaries ~ species + age_category + (1|ring_nb) + (1|year),data=model_data)
+wingpatch_PFCF_model <- lmer(sum_of_white_on_primaries ~ species* age_category + (1|ring_nb) + (1|year),data=model_data)
 summary(wingpatch_PFCF_model)
 plot(residuals(wingpatch_PFCF_model))
 qqnorm(residuals(wingpatch_PFCF_model))
 qqline(residuals(wingpatch_PFCF_model))
 vif(wingpatch_PFCF_model)
+
+hist(log(model_data$sum_of_white_on_primaries),breaks=100)
 
 patch_size_PFCF_model <- lmer(patch_size ~ species + age_category + (1|ring_nb) + (1|year),data=model_data)
 summary(patch_size_PFCF_model)
@@ -447,7 +449,7 @@ ggplot(adj_mass_model_data, aes(x=species, y=adj.wingpatch)) +
   facet_wrap(~age_category)
 
 ggplot(adj_mass_model_data, aes(x=species, y=adj.patch_size)) +
-  geom_boxplot() +
+  geom_boxplot()
   facet_wrap(~age_category)
 
 
