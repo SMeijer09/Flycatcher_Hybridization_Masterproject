@@ -3,6 +3,7 @@ library(lme4)
 library(lmerTest)
 library(patchwork)
 library(car)
+library(smatr)
 
 data1 <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences.csv") |>
   mutate(patch_h = as.numeric(patch_h),
@@ -32,41 +33,45 @@ data1_clean <- data1 |>
   group_by(yearAreaBox) |>
   mutate(hybridnest = ifelse(n_distinct(species) > 1, 1, 0)) |>
   mutate(n_birds=n())|>
-  ungroup()
+  ungroup() |> 
+  mutate(
+    tarsus = ifelse(tarsus <=2 | tarsus >= 50, NA, tarsus),
+    tail   = ifelse(tail >= 100, NA, tail),
+    beak   = ifelse(beak >= 22, NA, beak),
+    mass   = ifelse(mass <= 4 | mass >= 80, NA, mass),
+    wing   = ifelse(wing <= 8, NA, wing),
+    sum_of_white_on_primaries = ifelse(sum_of_white_on_primaries >= 200, NA, sum_of_white_on_primaries),
+    patch_size = ifelse(patch_size >= 300, NA, patch_size)) |>
+  filter(sex=="male")
 
 paired_male_data <- data1_clean |>
-  filter(sex=="male" & n_birds==2) |>
-  filter(tarsus<25,
-         tail>40 & tail<60,
-         beak<18,
-         mass>7 & mass<17,
-         wing>70)
+  filter(sex=="male" & n_birds==2)
 
 collared_data <- paired_male_data |> filter(species=="CF")
 pied_data <- paired_male_data |> filter(species=="PF")
 view(collared_data)
 
 str(collared_data)
-pairs(~ mass + tarsus + wing + tail + beak, data = paired_male_data)
+pairs(~ mass + tarsus + wing + beak, data = data1_clean)
+cor(data1_clean[, c("mass", "tarsus", "wing", "beak")], use = "complete.obs")
+
 plot(log(paired_male_data$tarsus),log(paired_male_data$mass))
 plot(log(paired_male_data$wing),log(paired_male_data$mass))
-plot(log(paired_male_data$tail),log(paired_male_data$mass))
 plot(log(paired_male_data$beak),log(paired_male_data$mass))
-cor(paired_male_data[, c("mass", "tarsus", "wing", "tail", "beak")], use = "complete.obs")
+cor(paired_male_data[, c("mass", "tarsus", "wing", "beak")], use = "complete.obs")
 
-pairs(~ mass + tarsus + wing + tail + beak, data = collared_data)
+pairs(~ mass + tarsus + wing + beak, data = collared_data)
 plot(log(collared_data$tarsus), log(collared_data$mass))
 plot(log(collared_data$wing), log(collared_data$mass))
-plot(log(collared_data$tail), log(collared_data$mass))
 plot(log(collared_data$beak), log(collared_data$mass))
-cor(collared_data[, c("mass", "tarsus", "wing", "tail", "beak")], use = "complete.obs")
+cor(collared_data[, c("mass", "tarsus", "wing", "beak")], use = "complete.obs")
 
-pairs(~ mass + tarsus + wing + tail + beak, data = pied_data)
+pairs(~ mass + tarsus + wing + beak, data = pied_data)
 plot(log(pied_data$tarsus), log(pied_data$mass))
 plot(log(pied_data$wing), log(pied_data$mass))
 plot(log(pied_data$tail), log(pied_data$mass))
 plot(log(pied_data$beak), log(pied_data$mass))
-cor(pied_data[, c("mass", "tarsus", "wing", "tail", "beak")], use = "complete.obs")
+cor(pied_data[, c("mass", "tarsus", "wing", "beak")], use = "complete.obs")
 
 #PCA of morphological traits
 collared_pca <- prcomp(collared_data[, c("tarsus", "wing")], scale. = TRUE)
@@ -96,4 +101,8 @@ cor(collared_data$mass, collared_data$BCI, use="complete.obs")
 plot(collared_data$mass, collared_data$BCI)
 #not good either?
 
+#### Lets start with a simple scaled mass index using tarsus ####
+BCI_data <- data1_clean |>
+  filter(sex=="male") |>
+  select(ring_nb, yearAreaBox, year, species, tarsus, mass, wing)
 
