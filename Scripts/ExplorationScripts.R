@@ -299,7 +299,7 @@ plot(residuals(beak_model))
 qqnorm(residuals(beak_model))
 qqline(residuals(beak_model))
 
-wingpatch_PFCF_model <- lmer(sum_of_white_on_primaries ~ species*age_category + (1|ring_nb) + (1|year),data=model_data)
+wingpatch_PFCF_model <- lmer(sum_of_white_on_primaries ~ species + age_category + (1|ring_nb) + (1|year),data=model_data)
 summary(wingpatch_PFCF_model)
 plot(residuals(wingpatch_PFCF_model))
 qqnorm(residuals(wingpatch_PFCF_model))
@@ -312,7 +312,7 @@ plot(residuals(patch_size_PFCF_model))
 qqnorm(residuals(patch_size_PFCF_model))
 qqline(residuals(patch_size_PFCF_model))
 
-tarsus_PFCF_model <- lmer(tarsus ~ species*age_category + (1|ring_nb) + (1|year),data=model_data)
+tarsus_PFCF_model <- lmer(tarsus ~ species + age_category + (1|ring_nb) + (1|year),data=model_data)
 summary(tarsus_PFCF_model)
 plot(residuals(tarsus_PFCF_model))
 qqnorm(residuals(tarsus_PFCF_model))
@@ -344,7 +344,7 @@ a <- paired_male_data |>
   filter(n_entries > 1 & hybridnest==1) 
 view(a)
 
-#### Making the plots again but adjusted for mass or tarsus
+#### Making the plots again but adjusted for mass or tarsus - only CF ###
 adj_tarsus_male_data <- paired_male_data |>
   mutate(adj.wing = wing/tarsus,
          adj.beak = beak/tarsus,
@@ -396,6 +396,56 @@ ggplot(subset(adj_mass_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj
   geom_boxplot(outliers=FALSE) +
   facet_wrap(~age_category) 
 
+### adjusted by mass and tarsus, only hybrid CF and PF pure ####
+adj_tarsus_model_data <- model_data |>
+  mutate(adj.wing = wing/tarsus,
+         adj.beak = beak/tarsus,
+         adj.patch_size = patch_size/tarsus,
+         adj.wingpatch = sum_of_white_on_primaries/tarsus)
+adj_mass_model_data <- model_data |> 
+  mutate(adj.tarsus = tarsus/mass,
+         adj.beak = beak/mass,
+         adj.patch_size = patch_size/mass,
+         adj.wingpatch = sum_of_white_on_primaries/mass,
+         adj.wing = wing/mass)
+
+### adjusted by tarsus ###
+ggplot(adj_tarsus_model_data, aes(x=species, y=adj.wing)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+ggplot(adj_tarsus_model_data, aes(x=species, y=adj.beak)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+ggplot(adj_tarsus_model_data, aes(x=species, y=adj.patch_size)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+ggplot(adj_tarsus_model_data, aes(x=species, y=adj.wingpatch)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+### adjusted by mass ###
+ggplot(adj_mass_model_data, aes(x=species, y=adj.wing)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+ggplot(adj_mass_model_data, aes(x=species, y=adj.beak)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+ggplot(adj_mass_model_data, aes(x=species, y=adj.tarsus)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+ggplot(adj_mass_model_data, aes(x=species, y=adj.wingpatch)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
+
+ggplot(adj_mass_model_data, aes(x=species, y=adj.patch_size)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category)
 
 
 
