@@ -335,3 +335,66 @@ summary(mass_PFCF_model)
 plot(residuals(mass_PFCF_model))
 qqnorm(residuals(mass_PFCF_model))
 qqline(residuals(mass_PFCF_model))
+
+
+#count how many individuals have multiple entries in a single year
+paired_male_data |> 
+  group_by(ring_nb, year) |>
+  summarise(n_entries = n()) |>
+  filter(n_entries > 1) |> print(n=134)
+
+#### Making the plots again but adjusted for mass or tarsus
+adj_tarsus_male_data <- paired_male_data |>
+  mutate(adj.wing = wing/tarsus,
+         adj.beak = beak/tarsus,
+         adj.patch_size = patch_size/tarsus,
+         adj.wingpatch = sum_of_white_on_primaries/tarsus)
+adj_mass_male_data <- paired_male_data |>
+  mutate(adj.tarsus = tarsus/mass,
+         adj.beak = beak/mass,
+         adj.patch_size = patch_size/mass,
+         adj.wingpatch = sum_of_white_on_primaries/mass,
+         adj.wing = wing/mass)
+
+#### CF hybrid, CF Pure ######
+### adjusted by tarsus length ####
+ggplot(subset(adj_tarsus_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.wing)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+ggplot(subset(adj_tarsus_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.beak)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+ggplot(subset(adj_tarsus_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.patch_size)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+ggplot(subset(adj_tarsus_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.wingpatch)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+### adjusted by mass ####
+ggplot(subset(adj_mass_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.wing)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+ggplot(subset(adj_mass_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.beak)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+ggplot(subset(adj_mass_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.tarsus)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+ggplot(subset(adj_mass_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.wi)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+ggplot(subset(adj_mass_male_data,species=="CF"), aes(x=factor(hybridnest), y=adj.patch_size)) +
+  geom_boxplot(outliers=FALSE) +
+  facet_wrap(~age_category) 
+
+
+
+
