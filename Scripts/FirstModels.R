@@ -42,7 +42,8 @@ data_clean <- data |>
     mass   = ifelse(mass <= 4 | mass >= 80, NA, mass),
     wing   = ifelse(wing <= 8, NA, wing),
     sum_of_white_on_primaries = ifelse(sum_of_white_on_primaries >= 200, NA, sum_of_white_on_primaries),
-    patch_size = ifelse(patch_size >= 300, NA, patch_size)) 
+    patch_size = ifelse(patch_size >= 300, NA, patch_size),
+    adj.wing_patch = sum_of_white_on_primaries/mass) 
 view(data_clean)
 
 filtered_data <- data_clean |>
@@ -121,3 +122,50 @@ ggplot(combined_data, aes(x=factor(hybridnest),y=adj.patch_size_m)) +
 ggplot(combined_data, aes(x=factor(hybridnest),y=mass_m)) +
   geom_boxplot() +
   geom_jitter(width=0.2, alpha=0.1,color="red")
+
+m6 <- glmer(hybridnest ~ adj.patch_size_m + mass_m + (1|year), data=combined_data, family=binomial)
+summary(m6)
+
+
+#centering and scaling the measurements for all pied flycatcher males and collared flycatcher males seperately
+allmale_data <- data_clean |>
+  filter(sex=="male") |>
+  filter(!is.na(mass),!is.na(patch_size),!is.na(sum_of_white_on_primaries),!is.na(adj.wing_patch)) |>
+  group_by(year,species) |>
+  mutate(z_mass = as.numeric(scale(mass)),
+         z_patch_size = as.numeric(scale(patch_size)),
+         z_wing_patch = as.numeric(scale(sum_of_white_on_primaries)),
+         z_adj.wing_patch = as.numeric(scale(adj.wing_patch))) |>
+  ungroup() |>
+  select(yearAreaBox,ring_nb,z_mass,z_patch_size,z_wing_patch,z_adj.wing_patch)
+view(allmale_data) 
+
+combined_data <- combined_data |> left_join(allmale_data, by=c("yearAreaBox","ring_nb_m"="ring_nb")) |>
+  rename(z_mass_m = z_mass, z_patch_size_m = z_patch_size, z_wing_patch_m = z_wing_patch, z_adj.wing_patch_m = z_adj.wing_patch) 
+view(combined_data)
+
+
+m7 <- glmer(hybridnest ~ z_patch_size_m + z_mass_m + (1|ring_nb_f), data=combined_data, family=binomial)
+summary(m7)
+
+m8 <- glmer(hybridnest ~ z_wing_patch_m + z_patch_size_m + z_mass_m + (1|ring_nb_f), data=combined_data, family=binomial)
+summary(m8)
+
+m9 <- glmer(hybridnest ~ z_adj.wing_patch_m + z_patch_size_m + z_mass_m + (1|ring_nb_f), data=combined_data, family=binomial)
+summary(m9)
+
+ggplot(combined_data, aes(x=factor(hybridnest),y=z_patch_size_m)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.15,color="red")
+
+ggplot(combined_data, aes(x=factor(hybridnest),y=z_mass_m)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.15,color="red")
+
+ggplot(combined_data, aes(x=factor(hybridnest),y=z_wing_patch_m)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.15,color="red")
+
+ggplot(combined_data, aes(x=factor(hybridnest),y=z_adj.wing_patch_m)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.15,color="red")
