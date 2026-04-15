@@ -46,8 +46,78 @@ data_clean <- data |>
 view(data_clean)
 
 filtered_data <- data_clean |>
-  filter(n_birds <= 2 & n_birds >= 1) |> #filter for all female pied flycatchers and their mate
-  
+  filter(n_birds == 2) |> #filter for all female pied flycatchers and their mate
+  group_by(yearAreaBox) |>
+  filter(any(sex=="female" & species =="PF"))
+view(filtered_data)
 
-view(filtered_data)  
-  
+female_data <- filtered_data |>
+  filter(sex=="female") |>
+  rename_with(~ paste0(.x, "_f"), -c(yearAreaBox, year, nestbox, fledge_nb, hybridnest, n_birds))
+male_data <- filtered_data |>
+  filter(sex=='male') |>
+  rename_with(~ paste0(.x, "_m"), -c(yearAreaBox, year, nestbox, fledge_nb, hybridnest, n_birds))
+#now i need to have the female ringnb, nestbox, year, and then the male metrics and species
+combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","fledge_nb","hybridnest","n_birds")) |>
+  mutate(adj.patch_size_m = patch_size_m/mass_m)
+view(combined_data)
+
+hist(combined_data$mass_m,breaks=100)
+hist(combined_data$patch_size_m,breaks=100)
+
+#count the number of females that have a hybrid nest and more than 1 entry in a year
+combined_data |> 
+  group_by(sex_f, ring_nb_f, hybridnest) |>
+  summarise(n = n()) |>
+  filter(n>1) |> 
+  print(n=100) 
+
+female_switch <- female_data %>%
+  group_by(ring_nb_f) %>%
+  summarise(
+    n_years = n_distinct(year),
+    hybrid_values = n_distinct(hybridnest, na.rm = TRUE),
+    has_both = hybrid_values > 1
+  ) %>%
+  filter(has_both)
+
+print(female_switch,n=38)
+
+female_only_hybrid <- female_data %>%
+  filter(!is.na(hybridnest)) %>%
+  group_by(ring_nb_f) %>%
+  summarise(
+    n_obs = n(),
+    n_years = n_distinct(year),
+    all_hybrid = all(hybridnest == 1),
+    any_nonhybrid = any(hybridnest == 0)
+  ) %>%
+  filter(all_hybrid)
+
+print(female_only_hybrid,n=155)
+#155 females with only hybrid pair entries, most only 1 entry
+#38 females with both hybrid and non-hybrid pair entries, 2-5 entries
+
+m1 <- glmer(hybridnest ~ patch_size_m + mass_m + (1|year), data=combined_data, family=binomial)
+summary(m1)
+
+m2 <- glmer(hybridnest ~ adj.patch_size_m + mass_m + (1|year), data=combined_data, family=binomial)
+summary(m2)
+
+m3 <- glmer(hybridnest ~ adj.patch_size_m + (1|year), data=combined_data, family=binomial)
+summary(m3)
+
+m4 <- glmer(hybridnest ~ mass_m + (1|year), data=combined_data, family=binomial)
+summary(m4)
+
+m5 <- glmer(hybridnest ~ patch_size_m + (1|year), data=combined_data, family=binomial)
+summary(m5)
+AIC(m3,m5)
+
+ggplot(combined_data, aes(x=factor(hybridnest),y=adj.patch_size_m)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1,color="red")
+
+ggplot(combined_data, aes(x=factor(hybridnest),y=mass_m)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1,color="red")
