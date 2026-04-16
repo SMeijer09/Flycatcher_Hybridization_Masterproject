@@ -169,3 +169,14 @@ ggplot(combined_data, aes(x=factor(hybridnest),y=z_wing_patch_m)) +
 ggplot(combined_data, aes(x=factor(hybridnest),y=z_adj.wing_patch_m)) +
   geom_boxplot() +
   geom_jitter(width=0.2, alpha=0.15,color="red")
+
+#same plot but color the age_category_m
+ggplot(combined_data, aes(x=factor(hybridnest),y=z_patch_size_m,color=factor(age_category_m))) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.3)
+
+m10 <- glmer(hybridnest ~ z_patch_size_m + z_mass_m + age_category_m + z_wing_patch_m + (1|ring_nb_f), data=combined_data, family=binomial)
+summary(m10)
+
+
+

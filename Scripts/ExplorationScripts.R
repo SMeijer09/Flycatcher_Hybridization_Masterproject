@@ -73,10 +73,6 @@ data1 <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hy
          patch_size = patch_h*patch_b) |>
   filter(species == "PF" | species == "CF")
 
-
-view(data1)
-str(data1)
-
 bad_birds <- data1 |>
   group_by(ring_nb) |>
   summarise(n_sexes = n_distinct(sex)) |>
@@ -166,33 +162,39 @@ model_data <- data_hybrid |>
          sex=="male") 
 view(model_data)
 
-ggplot(model_data, aes(x=pair, y=mass)) +
+ggplot(subset(model_data,!is.na(age_category)), aes(x=pair, y=mass)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   labs(title="Mass by pair type", x="Pair type", y="Mass (g)") +
   facet_wrap(~age_category)
 
-ggplot(model_data, aes(x=pair, y=patch_size)) +
+ggplot(subset(model_data,!is.na(age_category)), aes(x=pair, y=patch_size)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   labs(title="Patch Size by pair type", x="Pair type", y="Patch size") +
   facet_wrap(~age_category)
 
-ggplot(model_data, aes(x=pair, y=sum_of_white_on_primaries)) +
+ggplot(subset(model_data,!is.na(age_category)), aes(x=pair, y=sum_of_white_on_primaries)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   labs(title="Wing patch by pair type", x="Pair type", y="Wing patch") + 
   facet_wrap(~age_category)
 
-ggplot(model_data, aes(x=pair, y=wing)) +
+ggplot(subset(model_data,!is.na(age_category)), aes(x=pair, y=wing)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   labs(title="Wing length by pair type", x="Pair type", y="Wing length (mm)") +
   facet_wrap(~age_category)
 
-ggplot(model_data, aes(x=pair, y=beak)) +
+ggplot(subset(model_data,!is.na(age_category)), aes(x=pair, y=beak)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   labs(title="Beak length by pair type", x="Pair type", y="Beak length (mm)") +
   facet_wrap(~age_category)
 
-ggplot(model_data, aes(x=pair, y=tarsus)) +
+ggplot(subset(model_data,!is.na(age_category)), aes(x=pair, y=tarsus)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   labs(title="Tarsus length by pair type", x="Pair type", y="Tarsus length (mm)") +
   facet_wrap(~age_category)
 
@@ -200,7 +202,7 @@ p1 <- ggplot(subset(model_data,patch_size<300), aes(x=sum_of_white_on_primaries,
   geom_point() +
   geom_smooth(method="lm", se=FALSE) +
   labs(title="Wing patch vs Patch size", x="Wing patch", y="Patch size") +
-  theme_minimal()
+  theme_minimal() + coord_cartesian(xlim = c(0, 110), ylim = c(0, 155))
 
 paired_male_data <- data1_clean |>
   filter(sex=="male" & n_birds==2)
@@ -208,8 +210,8 @@ paired_male_data <- data1_clean |>
 p2 <- ggplot(subset(paired_male_data,patch_size<300 & sum_of_white_on_primaries<150), aes(x=sum_of_white_on_primaries,y=patch_size,color=species)) +
   geom_point() +
   geom_smooth(method="lm", se=FALSE) +
-  labs(title="Wing patch vs Patch size", x="Wing patch", y="Patch size") +
-  theme_minimal()
+  labs(title="Wing patch vs Patch size (pure pairs)", x="Wing patch", y="Patch size") +
+  theme_minimal() + coord_cartesian(xlim = c(0, 110), ylim = c(0, 155))
 
 p1 + p2
 p1
@@ -261,11 +263,11 @@ ggplot(paired_male_data, aes(x=factor(age_category), y=sum_of_white_on_primaries
   geom_boxplot() +
   facet_wrap(~species) 
 
-ggplot(subset(paired_male_data,species=="CF"), aes(x=factor(hybridnest), y=sum_of_white_on_primaries)) +
+ggplot(subset(paired_male_data,species=="CF"&!is.na(age_category)), aes(x=factor(hybridnest), y=sum_of_white_on_primaries)) +
   geom_boxplot() +
   facet_wrap(~age_category) 
 
-ggplot(subset(paired_male_data,species=="CF"), aes(x=factor(hybridnest), y=tarsus)) +
+ggplot(subset(paired_male_data,species=="CF"&!is.na(age_category)), aes(x=factor(hybridnest), y=tarsus)) +
   geom_boxplot() +
   facet_wrap(~age_category) 
 
@@ -297,10 +299,10 @@ qqnorm(residuals(mass_model))
 qqline(residuals(mass_model))
 
 tarsus_model <- lmer(tarsus ~ age_category + (1|ring_nb) + (1|year), data=subset(paired_male_data,species=="CF"))
-summary(beak_model)
-plot(residuals(beak_model))
-qqnorm(residuals(beak_model))
-qqline(residuals(beak_model))
+summary(tarsus_model)
+plot(residuals(tarsus_model))
+qqnorm(residuals(tarsus_model))
+qqline(residuals(tarsus_model))
 
 wingpatch_PFCF_model <- lmer(sum_of_white_on_primaries ~ species* age_category + (1|ring_nb) + (1|year),data=model_data)
 summary(wingpatch_PFCF_model)
@@ -406,7 +408,8 @@ adj_tarsus_model_data <- model_data |>
   mutate(adj.wing = wing/tarsus,
          adj.beak = beak/tarsus,
          adj.patch_size = patch_size/tarsus,
-         adj.wingpatch = sum_of_white_on_primaries/tarsus)
+         adj.wingpatch = sum_of_white_on_primaries/tarsus,
+         adj.mass = mass/tarsus)
 adj_mass_model_data <- model_data |> 
   mutate(adj.tarsus = tarsus/mass,
          adj.beak = beak/mass,
@@ -415,42 +418,94 @@ adj_mass_model_data <- model_data |>
          adj.wing = wing/mass)
 
 ### adjusted by tarsus ###
-ggplot(adj_tarsus_model_data, aes(x=species, y=adj.wing)) +
+ggplot(subset(adj_tarsus_model_data,!is.na(age_category)), aes(x=species, y=adj.wing)) +
   geom_boxplot() +
   facet_wrap(~age_category)
 
-ggplot(adj_tarsus_model_data, aes(x=species, y=adj.beak)) +
+ggplot(subset(adj_tarsus_model_data,!is.na(age_category)), aes(x=species, y=adj.beak)) +
   geom_boxplot() +
   facet_wrap(~age_category)
 
-ggplot(adj_tarsus_model_data, aes(x=species, y=adj.patch_size)) +
+ggplot(subset(adj_tarsus_model_data,!is.na(age_category)), aes(x=species, y=adj.patch_size)) +
   geom_boxplot() +
   facet_wrap(~age_category)
 
-ggplot(adj_tarsus_model_data, aes(x=species, y=adj.wingpatch)) +
+ggplot(subset(adj_tarsus_model_data,!is.na(age_category)), aes(x=species, y=adj.wingpatch)) +
+  geom_boxplot() +
+  facet_wrap(~age_category)
+
+ggplot(subset(adj_tarsus_model_data,!is.na(age_category)), aes(x=species, y=adj.mass)) +
   geom_boxplot() +
   facet_wrap(~age_category)
 
 ### adjusted by mass ###
-ggplot(adj_mass_model_data, aes(x=species, y=adj.wing)) +
+ggplot(subset(adj_mass_model_data,!is.na(age_category)), aes(x=species, y=adj.wing)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   facet_wrap(~age_category)
 
-ggplot(adj_mass_model_data, aes(x=species, y=adj.beak)) +
+ggplot(subset(adj_mass_model_data,!is.na(age_category)), aes(x=species, y=adj.beak)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   facet_wrap(~age_category)
 
-ggplot(adj_mass_model_data, aes(x=species, y=adj.tarsus)) +
+ggplot(subset(adj_mass_model_data,!is.na(age_category)), aes(x=species, y=adj.tarsus)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   facet_wrap(~age_category)
 
-ggplot(adj_mass_model_data, aes(x=species, y=adj.wingpatch)) +
+ggplot(subset(adj_mass_model_data,!is.na(age_category)), aes(x=species, y=adj.wingpatch)) +
   geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   facet_wrap(~age_category)
 
-ggplot(adj_mass_model_data, aes(x=species, y=adj.patch_size)) +
-  geom_boxplot()
+ggplot(subset(adj_mass_model_data,!is.na(age_category)), aes(x=species, y=adj.patch_size)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1) +
   facet_wrap(~age_category)
 
+#testing significance between age ratios of hybrid and non hybrid pairs for CF
+  data1_clean |> #count the number of male birds in each age category for hybridnest 0 and species is CF
+    group_by(sex,species,age_category, hybridnest) |>
+    filter(sex=="male", species=="CF" & n_birds==2) |>
+    summarize(count = n()) |>
+    print(n=Inf)
 
+cf_males <- data1_clean |>
+  filter(sex=="male" & species=="CF" & n_birds==2) |> #change age cat NA to unknown
+  mutate(age_category = ifelse(is.na(age_category), "unknown", age_category))
+  #testing significance 
+  tab <- with(cf_males, table(age_category, hybridnest))
+  tab
+ prop.table(tab, margin = 2) 
+  chisq.test(tab)
+ 
+   plot_df <- data1_clean %>%
+    filter(sex == "male", species == "CF") %>%
+    mutate(
+      age_category = ifelse(is.na(age_category), "unknown", age_category),
+      hybridnest = factor(hybridnest, levels = c(0, 1), labels = c("pure (0)", "hybrid (1)")),
+      age_category = factor(age_category)
+    ) %>%
+    count(hybridnest, age_category) %>%
+    group_by(hybridnest) %>%
+    mutate(prop = n / sum(n)) %>%
+    ungroup()
+  
+  ggplot(plot_df, aes(x = hybridnest, y = prop, fill = age_category)) +
+    geom_col(width = 0.7) +
+    geom_text(aes(label = scales::percent(prop, accuracy = 1)),
+              position = position_stack(vjust = 0.5), color = "white", size = 3) +
+    scale_y_continuous(labels = scales::percent_format()) +
+    labs(x = NULL, y = "Proportion", fill = "Male age category") +
+    theme_classic()
+  
+  plot(data1_clean$mass, data_clean$tarsus)
+  plot(data1_clean$mass, data_clean$wing)
 
+pca_data <- data1_clean |>
+  select(tarsus,wing) |>
+  na.omit()
+pca <- prcomp(pca_data, scale. = TRUE)
+summary(pca)
+#plot PC1 against 
