@@ -195,6 +195,9 @@ ggplot(data_cleany, aes(x=mass,y=tarsus)) +
   geom_point(alpha=0.1) +
   facet_wrap(~species)
 
+ggplot(data_cleany, aes(x=mass,y=wing)) +
+  geom_point(alpha=0.1) 
+
 view(combined_data)
 
 

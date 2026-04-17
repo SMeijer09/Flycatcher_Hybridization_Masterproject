@@ -500,8 +500,8 @@ cf_males <- data1_clean |>
     labs(x = NULL, y = "Proportion", fill = "Male age category") +
     theme_classic()
   
-  plot(data1_clean$mass, data_clean$tarsus)
-  plot(data1_clean$mass, data_clean$wing)
+  plot(data1_clean$mass, data1_clean$tarsus)
+  plot(data1_clean$mass, data1_clean$wing)
 
 pca_data <- data1_clean |>
   select(tarsus,wing) |>
