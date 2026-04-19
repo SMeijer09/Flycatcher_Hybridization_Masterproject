@@ -97,8 +97,7 @@ female_only_hybrid <- female_data %>%
   filter(all_hybrid)
 
 print(female_only_hybrid,n=155)
-#155 females with only hybrid pair entries, most only 1 entry
-#38 females with both hybrid and non-hybrid pair entries, 2-5 entries
+ 
 
 m1 <- glmer(hybridnest ~ patch_size_m + mass_m + (1|year), data=combined_data, family=binomial)
 summary(m1)
@@ -121,6 +120,10 @@ ggplot(combined_data, aes(x=factor(hybridnest),y=adj.patch_size_m)) +
   geom_jitter(width=0.2, alpha=0.1,color="red")
 
 ggplot(combined_data, aes(x=factor(hybridnest),y=mass_m)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.1,color="red")
+
+ggplot(combined_data, aes(x=factor(hybridnest),y=adj.wing_patch_m)) +
   geom_boxplot() +
   geom_jitter(width=0.2, alpha=0.1,color="red")
 
