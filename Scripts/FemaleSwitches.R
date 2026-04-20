@@ -47,9 +47,7 @@ data_clean <- data |>
 view(data_clean)
 
 filtered_data <- data_clean |>
-  filter(n_birds == 2) |> #filter for all female pied flycatchers and their mate
-  group_by(yearAreaBox) |>
-  filter(any(sex=="female" & species =="PF"))
+  filter(n_birds == 2) #filter for all female pied flycatchers and their mate
 view(filtered_data)
 
 female_data <- filtered_data |>
@@ -72,7 +70,7 @@ female_switch <- female_data %>%
     has_both = hybrid_values > 1
   ) %>%
   filter(has_both)
-
+view(female_switch)
 #pull ring number from these females and add a column
 allmale_data <- data_clean |>
   filter(sex=="male") |>
@@ -96,7 +94,23 @@ subdata <- combined_data |>
   filter(switch == TRUE) 
 view(subdata)
 
-#make boxplots for each ring_nb and their male patch size
-ggplot(subdata, aes(x=factor(hybridnest),y=z_wing_patch_m,color=factor(year))) + geom_point() + facet_wrap(~ring_nb_f) 
+subdata <- subdata[order(subdata$ring_nb_f, subdata$year), ]             
 
-                                                                                                                                      
+#plot the number of hybridnests per species_f per year, without hybridnest=0
+ggplot(combined_data,aes(x=year, fill=factor(hybridnest))) +
+  geom_bar(position = "dodge") +
+  facet_wrap(~species_f) +
+  labs(fill = "Hybrid Nest") +
+  theme_minimal()
+
+ggplot(subset(subdata,species_f=="CF"), aes(
+  x = year,
+  y = z_mass_m,
+  color = factor(hybridnest),
+  group = interaction(ring_nb_f, hybridnest)
+)) +
+  geom_point() +
+  geom_line() + facet_wrap(~ring_nb_f) 
+
+
+
