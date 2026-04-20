@@ -74,6 +74,22 @@ female_switch <- female_data %>%
   filter(has_both)
 
 #pull ring number from these females and add a column
+allmale_data <- data_clean |>
+  filter(sex=="male") |>
+  filter(!is.na(mass),!is.na(patch_size),!is.na(sum_of_white_on_primaries),!is.na(adj.wing_patch),!is.na(adj.patch_size)) |>
+  group_by(year,species) |>
+  mutate(z_mass = as.numeric(scale(mass)),
+         z_patch_size = as.numeric(scale(patch_size)),
+         z_wing_patch = as.numeric(scale(sum_of_white_on_primaries)),
+         z_adj.wing_patch = as.numeric(scale(adj.wing_patch)),
+         z_adj.patch_size = as.numeric(scale(adj.patch_size))) |>
+  ungroup() |>
+  select(yearAreaBox,ring_nb,z_mass,z_patch_size,z_wing_patch,z_adj.wing_patch,z_adj.patch_size)
+view(allmale_data) 
+
+combined_data <- combined_data |> left_join(allmale_data, by=c("yearAreaBox","ring_nb_m"="ring_nb")) |>
+  rename(z_mass_m = z_mass, z_patch_size_m = z_patch_size, z_wing_patch_m = z_wing_patch, z_adj.wing_patch_m = z_adj.wing_patch, z_adj.patch_size_m = z_adj.patch_size) 
+view(combined_data)
 
 combined_data$switch <- combined_data$ring_nb_f %in% female_switch$ring_nb_f
 subdata <- combined_data |>
@@ -81,5 +97,6 @@ subdata <- combined_data |>
 view(subdata)
 
 #make boxplots for each ring_nb and their male patch size
-ggplot(subdata, aes(x=factor(hybridnest),y=sum_of_white_on_primaries_m)) +
-  geom_point() + facet_wrap(~ring_nb_f) 
+ggplot(subdata, aes(x=factor(hybridnest),y=z_wing_patch_m,color=factor(year))) + geom_point() + facet_wrap(~ring_nb_f) 
+
+                                                                                                                                      
