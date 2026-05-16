@@ -84,3 +84,17 @@ ggplot(subset(combined_data,!is.na(age_category_m)), aes(x=factor(hybridnest),y=
   geom_boxplot() +
   facet_wrap(~species_f)
 
+#plot the age category of the hybrid birds per species
+ggplot(subset(combined_data,!is.na(age_category_m)), aes(x=factor(hybridnest), fill=factor(age_category_m))) +
+  geom_bar(position="dodge") +
+  facet_wrap(~species_m)
+
+#what are the proportions that hybridize per species in comparison to non hybrid pairs
+combined_data |>
+  group_by(species_f, hybridnest) |>
+  summarise(n = n()) |>
+  group_by(species_f) |>
+  mutate(prop = n/sum(n))
+
+
+
