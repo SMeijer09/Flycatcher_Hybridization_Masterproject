@@ -68,7 +68,7 @@ female_switch <- female_data %>%
     n_years = n_distinct(year),
     hybrid_values = n_distinct(hybridnest, na.rm = TRUE),
     has_both = hybrid_values > 1
-  ) %>%
+  ) |>
   filter(has_both)
 view(female_switch)
 #pull ring number from these females and add a column
