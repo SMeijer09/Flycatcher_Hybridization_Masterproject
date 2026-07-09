@@ -126,3 +126,53 @@ plotdat <- combined_data |>
     total_nests = n(),
     prop_hybrid = hybrid_nests / total_nests
   )
+
+scale_factor <- 200   # experiment with this
+
+ggplot(plotdat, aes(year)) +
+  geom_col(aes(y = hybrid_nests), fill = "steelblue") +
+  geom_line(aes(y = prop_hybrid * scale_factor),
+            colour = "red", linewidth = 1.2) +
+  geom_point(aes(y = prop_hybrid * scale_factor),
+             colour = "red") +
+  scale_y_continuous(
+    name = "Number of hybrid nests",
+    sec.axis = sec_axis(~ . / scale_factor,
+                        name = "Proportion of hybrid nests")
+  ) + theme_minimal()
+
+
+#test if the proportions significantly differ between years
+tab <- table(combined_data$year, combined_data$hybridnest)
+tab
+chisq.test(tab)
+
+glm_model <- glm(hybridnest ~ year, data = combined_data, family = binomial)
+summary(glm_model)
+#no significant increase or decrease in proportions over the years
+
+glm_model2 <- glm(hybridnest ~ factor(year), data = combined_data, family = binomial)
+summary(glm_model2)
+
+overall_prop <- mean(combined_data$hybridnest)
+
+overall_prop
+
+year_tests <- combined_data |>
+  group_by(year) |>
+  summarise(
+    hybrids = sum(hybridnest),
+    total = n(),
+    prop = hybrids / total,
+    p_value = prop.test(
+      hybrids,
+      total,
+      p = overall_prop
+    )$p.value
+  ) |>
+  mutate(
+    p_adj = p.adjust(p_value, method = "BH")
+  )
+print(year_tests,n=Inf)
+
+?prop.test()
