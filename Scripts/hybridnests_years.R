@@ -175,4 +175,5 @@ year_tests <- combined_data |>
   )
 print(year_tests,n=Inf)
 
-?prop.test()
+
+
