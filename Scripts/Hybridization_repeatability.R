@@ -4,7 +4,6 @@ library(lmerTest)
 library(patchwork)
 library(car)
 library(emmeans)
-#look at all hybrid nests
 data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b),
@@ -58,37 +57,6 @@ male_data <- filtered_data |>
 combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","fledge_nb","hybridnest","n_birds")) |> filter(!is.na(ring_nb_m))
 view(combined_data)
 
-#count the number of entries per species and hybridnest
-combined_data |>
-  group_by(hybridnest,species_f) |>
-  summarise(n = n())
-
-allmale_data <- data_clean |>
-  filter(sex=="male") |>
-  filter(!is.na(mass),!is.na(patch_size),!is.na(sum_of_white_on_primaries),!is.na(adj.wing_patch),!is.na(adj.patch_size)) |>
-  group_by(year,species) |>
-  mutate(z_mass = as.numeric(scale(mass)),
-         z_patch_size = as.numeric(scale(patch_size)),
-         z_wing_patch = as.numeric(scale(sum_of_white_on_primaries)),
-         z_adj.wing_patch = as.numeric(scale(adj.wing_patch)),
-         z_adj.patch_size = as.numeric(scale(adj.patch_size))) |>
-  ungroup() |>
-  select(yearAreaBox,ring_nb,z_mass,z_patch_size,z_wing_patch,z_adj.wing_patch,z_adj.patch_size)
-view(allmale_data) 
-
-combined_data <- combined_data |> left_join(allmale_data, by=c("yearAreaBox","ring_nb_m"="ring_nb")) |>
-  rename(z_mass_m = z_mass, z_patch_size_m = z_patch_size, z_wing_patch_m = z_wing_patch, z_adj.wing_patch_m = z_adj.wing_patch, z_adj.patch_size_m = z_adj.patch_size) 
-view(combined_data)
-
-ggplot(subset(combined_data,!is.na(age_category_m)), aes(x=factor(hybridnest),y=z_mass_m)) +
-  geom_boxplot() +
-  facet_wrap(~species_f)
-
-#plot the age category of the hybrid birds per species
-ggplot(subset(combined_data,!is.na(age_category_m)), aes(x=factor(hybridnest), fill=factor(age_category_m))) +
-  geom_bar(position="dodge") +
-  facet_wrap(~species_m)
-
 #what are the proportions that hybridize per species in comparison to non hybrid pairs
 combined_data |>
   group_by(species_f, hybridnest) |>
@@ -103,3 +71,4 @@ combined_data |> #check which ring_nb_f have more than 1 hybridnest
   filter(n_hybridnests > 1)
 
 str(combined_data)
+
