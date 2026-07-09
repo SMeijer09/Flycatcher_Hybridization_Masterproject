@@ -95,4 +95,34 @@ combined_data |>
   summarise(n = n()) |>
   group_by(species_f) |>
   mutate(prop = n/sum(n))
-                                         
+
+#plot the amount of hybridnest = 1 over the years and in the background plot a line for the amount of hybrid nest = 0 over the years
+p1 <- ggplot(subset(combined_data,hybridnest==1), aes(x=year, fill=factor(hybridnest))) +
+  geom_bar(position="dodge") + geom_line(data=subset(combined_data,hybridnest==0), aes(x=year), stat="count", color="red") 
+
+#now plot the proportion of hybrid nests over the years
+p2 <- combined_data |>
+  group_by(year, hybridnest) |>
+  summarise(n = n()) |>
+  group_by(year) |>
+  mutate(prop = n/sum(n)) |>
+  filter(hybridnest==1) |>
+  ggplot(aes(x=year, y=prop)) +
+  geom_line() +
+  geom_point() +
+  ylim(0,0.2) +
+  labs(y="Proportion of hybrid nests", x="Year") +
+  theme_minimal()
+
+p1 + p2 
+
+#overlay p1 and p2
+
+
+plotdat <- combined_data |>
+  group_by(year) |>
+  summarise(
+    hybrid_nests = sum(hybridnest == 1),
+    total_nests = n(),
+    prop_hybrid = hybrid_nests / total_nests
+  )
