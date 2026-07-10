@@ -72,3 +72,14 @@ combined_data |> #check which ring_nb_f have more than 1 hybridnest
 
 str(combined_data)
 
+repeat_data <- combined_data |> select(yearAreaBox,year,nestbox,ring_nb_f, species_f, hybridnest) |>
+  group_by(ring_nb_f) |>
+  mutate(previous_hybrid = lag(cumsum(hybridnest), default = 0)) |>
+    ungroup()
+view(repeat_data)
+
+m1 <- glm(hybridnest ~ previous_hybrid + species_f + factor(year), data = repeat_data, family = binomial)
+summary(m1) #should i include random effect for individual? i dont think that works
+
+m2 <- glm(hybridnest ~ previous_hybrid * species_f + factor(year), data = repeat_data, family = binomial)
+summary(m2)
