@@ -103,3 +103,13 @@ combined_data |> #check which ring_nb_f have more than 1 hybridnest
   filter(n_hybridnests > 1)
 
 str(combined_data)
+
+#quick calculation of average patch_size_m for PF species_m
+combined_data |>
+  filter(species_f=="PF") |>
+  summarise(avg_patch_size_m = mean(patch_size_m, na.rm=TRUE),
+            avg_wing_patch_m = mean(sum_of_white_on_primaries_m, na.rm=TRUE),
+            avg_tarsus_m = mean(tarsus_m, na.rm=TRUE),
+            avg_wing_m = mean(wing_m, na.rm=TRUE),
+            avg_mass_m = mean(mass_m, na.rm=TRUE)) |>
+  view()
