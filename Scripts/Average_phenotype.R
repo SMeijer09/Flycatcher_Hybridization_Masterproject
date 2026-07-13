@@ -79,6 +79,8 @@ m2pf <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data,species_f=="PF")
 summary(m2pf)
 m3pf <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data,species_f=="PF"), family=binomial)
 summary(m3pf)
+m4pf <- glm(hybridized ~ avg_wing_m, data=subset(avg_data,species_f=="PF"), family=binomial)
+summary(m4pf)
 
 m1cf <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data,species_f=="CF"), family=binomial)
 summary(m1cf)
@@ -86,6 +88,8 @@ m2cf <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data,species_f=="CF")
 summary(m2cf)
 m3cf <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data,species_f=="CF"), family=binomial)
 summary(m3cf)
+m4cf <- glm(hybridized ~ avg_wing_m, data=subset(avg_data,species_f=="CF"), family=binomial)
+summary(m4cf)
 
 
 
