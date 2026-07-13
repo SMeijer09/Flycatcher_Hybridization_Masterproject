@@ -92,5 +92,4 @@ m4cf <- glm(hybridized ~ avg_wing_m, data=subset(avg_data,species_f=="CF"), fami
 summary(m4cf)
 
 
-
 ggplot(subset(avg_data,species_f=="CF"), aes(x=factor(hybridized), y=avg_patch_size_m)) + geom_boxplot() + theme_minimal()
