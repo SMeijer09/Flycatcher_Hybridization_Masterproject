@@ -96,5 +96,19 @@ ggplot(subset(avg_data,species_f=="CF"), aes(x=factor(hybridized), y=avg_patch_s
 
 m5pf <- glm(n_hybridized ~ avg_patch_size_m, data=subset(avg_data,species_f=="PF"), family=poisson)
 summary(m5pf)
+m6pf <- glm(n_hybridized ~ avg_wing_patch_m, data=subset(avg_data,species_f=="PF"), family=poisson)
+summary(m6pf)
+m7pf <- glm(n_hybridized ~ avg_tarsus_m, data=subset(avg_data,species_f=="PF"), family=poisson)
+summary(m7pf)
+m8pf <- glm(n_hybridized ~ avg_wing_m, data=subset(avg_data,species_f=="PF"), family=poisson)
+summary(m8pf)
+
 m5cf <- glm(n_hybridized ~ avg_patch_size_m, data=subset(avg_data,species_f=="CF"), family=poisson)
 summary(m5cf)
+m6cf <- glm(n_hybridized ~ avg_wing_patch_m, data=subset(avg_data,species_f=="CF"), family=poisson)
+summary(m6cf)
+m7cf <- glm(n_hybridized ~ avg_tarsus_m, data=subset(avg_data,species_f=="CF"), family=poisson)
+summary(m7cf)
+m8cf <- glm(n_hybridized ~ avg_wing_m, data=subset(avg_data,species_f=="CF"), family=poisson)
+summary(m8cf)
+
