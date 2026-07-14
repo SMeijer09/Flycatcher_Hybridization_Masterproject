@@ -4,6 +4,7 @@ library(lmerTest)
 library(patchwork)
 library(car)
 library(emmeans)
+library(ggeffects)
 data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b),
@@ -75,11 +76,62 @@ str(combined_data)
 repeat_data <- combined_data |> select(yearAreaBox,year,nestbox,ring_nb_f, species_f, hybridnest) |>
   group_by(ring_nb_f) |>
   mutate(previous_hybrid = lag(cumsum(hybridnest), default = 0)) |>
-    ungroup()
+    ungroup() |>
+  mutate(previous_hybrid_binary = ifelse(previous_hybrid > 0, 1, 0)) 
 view(repeat_data)
 
 m1 <- glm(hybridnest ~ previous_hybrid + species_f + factor(year), data = repeat_data, family = binomial)
 summary(m1) #should i include random effect for individual? i dont think that works
 
-m2 <- glm(hybridnest ~ previous_hybrid * species_f + factor(year), data = repeat_data, family = binomial)
+m2 <- glmer(hybridnest ~ previous_hybrid * species_f + (1|year), data = repeat_data, family = binomial)
 summary(m2)
+
+m3 <- glmer(hybridnest ~ previous_hybrid + species_f + (1|year), data = repeat_data, family = binomial)
+summary(m3)
+
+m4 <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year), data = repeat_data, family = binomial)
+summary(m4)
+
+#calculate probabilities for each category from m3
+newdata <- expand.grid(
+  previous_hybrid = c(0, 1,2),
+  species_f = c("CF", "PF")
+)
+
+newdata$predicted_prob <- predict(
+  m3,
+  newdata = newdata,
+  type = "response",
+  re.form = NA
+)
+
+newdata
+
+pred <- ggpredict(
+  m2,
+  terms = c("previous_hybrid", "species_f")
+)
+
+plot(pred)
+
+#do the same for m4
+newdata1 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
+)
+
+newdata1$predicted_prob <- predict(
+  m4,
+  newdata = newdata1,
+  type = "response",
+  re.form = NA
+)
+
+newdata1
+
+pred1 <- ggpredict(
+  m4,
+  terms = c("previous_hybrid_binary", "species_f")
+)
+
+plot(pred1)
