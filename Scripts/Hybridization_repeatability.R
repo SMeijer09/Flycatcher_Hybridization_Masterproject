@@ -108,7 +108,7 @@ newdata$predicted_prob <- predict(
 newdata
 
 pred <- ggpredict(
-  m2,
+  m3,
   terms = c("previous_hybrid", "species_f")
 )
 
@@ -135,3 +135,75 @@ pred1 <- ggpredict(
 )
 
 plot(pred1)
+
+###### now do the same but remove all birds with only 1 entry #######
+repeat_data1 <- repeat_data |>
+  group_by(ring_nb_f) |>
+  mutate(n_entries = n()) |>
+  ungroup() |>
+  filter(n_entries > 1 )
+view(repeat_data1)
+
+m1f <- glm(hybridnest ~ previous_hybrid + species_f + factor(year), data = repeat_data1, family = binomial)
+summary(m1f)
+
+m2f <- glmer(hybridnest ~ previous_hybrid * species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m2f)
+
+m3f <- glmer(hybridnest ~ previous_hybrid + species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m3f)
+
+m4f <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m4f)
+
+m5f <- glmer(hybridnest ~ previous_hybrid_binary * species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m5f)
+
+#calculate probabilities for each category from m3f
+newdata <- expand.grid(
+  previous_hybrid = c(0, 1,2),
+  species_f = c("CF", "PF")
+)
+
+newdata$predicted_prob <- predict(
+  m3f,
+  newdata = newdata,
+  type = "response",
+  re.form = NA
+)
+
+newdata
+
+predf <- ggpredict(
+  m3f,
+  terms = c("previous_hybrid", "species_f")
+)
+
+plot(predf)
+
+#do the same for m4
+newdata1 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
+)
+
+newdata1$predicted_prob <- predict(
+  m4f,
+  newdata = newdata1,
+  type = "response",
+  re.form = NA
+)
+
+newdata1
+
+pred1f <- ggpredict(
+  m4f,
+  terms = c("previous_hybrid_binary", "species_f")
+)
+
+plot(pred1f)
+
+#count the number of unique ring_nb per species
+repeat_data1 |>
+  group_by(species_f) |>
+  summarise(n_unique_females = n_distinct(ring_nb_f))
