@@ -207,3 +207,22 @@ plot(pred1f)
 repeat_data1 |>
   group_by(species_f) |>
   summarise(n_unique_females = n_distinct(ring_nb_f))
+
+
+#plotting the raw data 
+
+raw <- repeat_data1 |>
+  group_by(species_f, previous_hybrid) |>
+  summarise(
+    prop = mean(hybridnest),
+    n = n(),
+    .groups = "drop"
+  )
+
+ggplot(raw,
+       aes(previous_hybrid, prop,
+           colour = species_f,
+           group = species_f)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::percent)
+
