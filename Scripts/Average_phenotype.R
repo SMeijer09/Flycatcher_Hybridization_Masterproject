@@ -69,7 +69,8 @@ avg_data <- combined_data |> select(ring_nb_f,year, species_f, age_category_f, h
             avg_wing_patch_m = mean(sum_of_white_on_primaries_m, na.rm=TRUE),
             avg_mass_m = mean(mass_m, na.rm=TRUE),
             n_hybridized = first(n_hybridized),
-            stdev_patch_m = sd(patch_size_m, na.rm=TRUE)) |>
+            stdev_patch_m = sd(patch_size_m, na.rm=TRUE),
+            n_males = n()) |>
   mutate(hybridized = ifelse(n_hybridized > 0, 1, 0)) 
 view(avg_data)  
 str(avg_data)
@@ -92,8 +93,9 @@ summary(m3cf)
 m4cf <- glm(hybridized ~ avg_wing_m, data=subset(avg_data,species_f=="CF"), family=binomial)
 summary(m4cf)
 
-
 ggplot(subset(avg_data,species_f=="CF"), aes(x=factor(hybridized), y=avg_patch_size_m)) + geom_boxplot() + theme_minimal()
+
+ggplot(subset(avg_data,species_f=="CF"), aes(x=factor(hybridized), y=avg_patch_size_m)) + geom_violin() + theme_minimal()
 
 m5pf <- glm(n_hybridized ~ avg_patch_size_m, data=subset(avg_data,species_f=="PF"), family=poisson)
 summary(m5pf)
@@ -117,6 +119,8 @@ m9pf <- glm(hybridized ~ stdev_patch_m, data=subset(avg_data,species_f=="PF"), f
 summary(m9pf)
 m9cf <- glm(hybridized ~ stdev_patch_m, data=subset(avg_data,species_f=="CF"), family=binomial)
 summary(m9cf)
+m9 <- glm(hybridized ~ stdev_patch_m, data=avg_data, family=binomial)
+summary(m9)
 
 ggplot(subset(avg_data,species_f=="CF"), aes(y=avg_patch_size_m, x=factor(n_hybridized))) + geom_boxplot() + theme_minimal()
 
