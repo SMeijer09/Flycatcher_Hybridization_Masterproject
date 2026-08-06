@@ -115,14 +115,50 @@ summary(m7cf)
 m8cf <- glm(n_hybridized ~ avg_wing_m, data=subset(avg_data,species_f=="CF"), family=poisson)
 summary(m8cf)
 
-m9pf <- glm(hybridized ~ stdev_patch_m, data=subset(avg_data,species_f=="PF"), family=binomial)
-summary(m9pf)
-m9cf <- glm(hybridized ~ stdev_patch_m, data=subset(avg_data,species_f=="CF"), family=binomial)
-summary(m9cf)
-m9 <- glm(hybridized ~ stdev_patch_m, data=avg_data, family=binomial)
-summary(m9)
-
 ggplot(subset(avg_data,species_f=="CF"), aes(y=avg_patch_size_m, x=factor(n_hybridized))) + geom_boxplot() + theme_minimal()
 
 
+##### now do the same but remove all females with only 1 entry ######
+avg_data1 <- avg_data |>
+  filter(n_males>1)
+view(avg_data1)
 
+m1pf_f <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data1,species_f=="PF"), family=binomial)
+summary(m1pf_f)
+m2pf_f <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data1,species_f=="PF"), family=binomial)
+summary(m2pf_f)
+m3pf_f <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data1,species_f=="PF"), family=binomial)
+summary(m3pf_f) #
+m4pf_f <- glm(hybridized ~ avg_wing_m, data=subset(avg_data1,species_f=="PF"), family=binomial)
+summary(m4pf_f)
+
+m1cf_f <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data1,species_f=="CF"), family=binomial)
+summary(m1cf_f)
+m2cf_f <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data1,species_f=="CF"), family=binomial)
+summary(m2cf_f)
+m3cf_f <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data1,species_f=="CF"), family=binomial)
+summary(m3cf_f)
+m4cf_f <- glm(hybridized ~ avg_wing_m, data=subset(avg_data1,species_f=="CF"), family=binomial)
+summary(m4cf_f)
+
+ggplot(subset(avg_data1,species_f=="PF"),aes(x=factor(hybridized),y=avg_tarsus_m)) + geom_violin()
+
+m5pf_f <- glm(n_hybridized ~ avg_patch_size_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m5pf_f)
+m6pf_f <- glm(n_hybridized ~ avg_wing_patch_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m6pf_f)
+m7pf_f <- glm(n_hybridized ~ avg_tarsus_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m7pf_f)
+m8pf_f <- glm(n_hybridized ~ avg_wing_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m8pf_f)
+
+m5cf_f <- glm(n_hybridized ~ avg_patch_size_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m5cf_f)
+m6cf_f <- glm(n_hybridized ~ avg_wing_patch_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m6cf_f)
+m7cf_f <- glm(n_hybridized ~ avg_tarsus_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m7cf_f)
+m8cf_f <- glm(n_hybridized ~ avg_wing_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m8cf_f)
+
+ggplot(subset(avg_data1,species_f=="PF"),aes(x=factor(n_hybridized),y=avg_tarsus_m)) + geom_violin()
