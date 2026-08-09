@@ -64,3 +64,75 @@ male_data <- filtered_data |>
 
 combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","fledge_nb","hybridnest","n_birds")) |> filter(!is.na(ring_nb_m))
 view(combined_data)
+
+#plot the male phenotypes in a violin plot over the years
+ggplot(combined_data, aes(x=as.factor(year), y=tarsus_m, fill=species_m)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white") +
+  theme_classic() +
+  labs(x="Year", y="Beak length (mm)", fill="Species") +
+  scale_fill_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
+
+ggplot(combined_data, aes(x=as.factor(year), y=patch_size_m, fill=species_m)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white") +
+  theme_classic() +
+  labs(x="Year", y="Forehead patch size (mm^2)", fill="Species") +
+  scale_fill_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
+
+ggplot(combined_data, aes(x=as.factor(year), y=sum_of_white_on_primaries_m, fill=species_m)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white") +
+  theme_classic() +
+  labs(x="Year", y="Cumulative Wingpatch (mm)", fill="Species") +
+  scale_fill_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
+
+ggplot(combined_data, aes(x=as.factor(year), y=wing_m, fill=species_m)) +
+  geom_violin() +
+  geom_boxplot(width=0.1, fill="white") +
+  theme_classic() +
+  labs(x="Year", y="Wing length (mm)", fill="Species") +
+  scale_fill_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
+
+#plot the median for each year and species
+medians <- combined_data |>
+  group_by(year, species_m) |>
+  summarise(median_tarsus = median(tarsus_m, na.rm=TRUE),
+            median_patch_size = median(patch_size_m, na.rm=TRUE),
+            median_sum_of_white_on_primaries = median(sum_of_white_on_primaries_m, na.rm=TRUE),
+            median_wing = median(wing_m, na.rm=TRUE))
+ggplot(medians, aes(x=as.factor(year), y=median_tarsus, color=species_m, group=species_m)) +
+  geom_line() +
+  geom_point() +
+  theme_classic() +
+  labs(x="Year", y="Median tarsus length (mm)", color="Species") +
+  scale_color_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
+
+ggplot(medians, aes(x=as.factor(year), y=median_patch_size, color=species_m, group=species_m)) +
+  geom_line() +
+  geom_point() +
+  theme_classic() +
+  labs(x="Year", y="Median forehead patch size (mm^2)", color="Species") +
+  scale_color_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
+
+ggplot(medians, aes(x=as.factor(year), y=median_sum_of_white_on_primaries, color=species_m, group=species_m)) +
+  geom_line() +
+  geom_point() +
+  theme_classic() +
+  labs(x="Year", y="Median cumulative wingpatch (mm)", color="Species") +
+  scale_color_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
+
+ggplot(medians, aes(x=as.factor(year), y=median_wing, color=species_m, group=species_m)) +
+  geom_line() +
+  geom_point() +
+  theme_classic() +
+  labs(x="Year", y="Median wing length (mm)", color="Species") +
+  scale_color_manual(values=c("orange", "blue")) +
+  theme(legend.position = "top")
