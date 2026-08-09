@@ -16,13 +16,21 @@ data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hyb
          patch_size = patch_h*patch_b) |>
   filter(species == "PF" | species == "CF")
 
+#check combined_data for female birds that switch species
+species_switch <- data |>
+  group_by(ring_nb) |>
+  summarize(n_species = n_distinct(species)) |>
+  filter(n_species > 1) |>
+  pull(ring_nb)
+
+#check for birds that switch sex
 bad_birds <- data |>
   group_by(ring_nb) |>
   summarise(n_sexes = n_distinct(sex)) |>
   filter(n_sexes > 1) |>
   pull(ring_nb)
 bad_nests <- data |>
-  filter(ring_nb %in% bad_birds) |>
+  filter(ring_nb %in% bad_birds | ring_nb %in% species_switch) |>
   pull(yearAreaBox) |>
   unique()
 bad_nests
@@ -162,3 +170,26 @@ m8cf_f <- glm(n_hybridized ~ avg_wing_m, data=subset(avg_data1,species_f=="CF"),
 summary(m8cf_f)
 
 ggplot(subset(avg_data1,species_f=="PF"),aes(x=factor(n_hybridized),y=avg_tarsus_m)) + geom_violin()
+
+#extract ring numbers for species PF and hybridized is 1
+a <- avg_data1 |>
+  filter(species_f=="PF" & hybridized==1) |>
+  select(ring_nb_f)
+
+data_pf_1 <- combined_data |>
+  filter(ring_nb_f %in% a$ring_nb_f) |>
+  select(yearAreaBox,year,ring_nb_f,species_m,tarsus_m)
+view(data_pf_1)
+
+
+#plot per female the each male_tarsus length and color for species
+ggplot(data_pf_1, aes(y=tarsus_m, x=year, color=species_m)) + geom_point() + theme_minimal() + #add line for the ring_nb_f
+  geom_line(aes(group=ring_nb_f)) 
+
+#average heterospecific for each bird 
+data_pf_1 |>
+  group_by(ring_nb_f, species_m) |>
+  summarize(avg_tarsus_m = mean(tarsus_m, na.rm=TRUE)) |>
+              print(n=Inf) |>
+  ggplot(aes(y=avg_tarsus_m, x=species_m)) + geom_boxplot() + theme_minimal() + facet_wrap(~ring_nb_f)
+
