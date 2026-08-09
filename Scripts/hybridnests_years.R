@@ -16,13 +16,19 @@ data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hyb
          patch_size = patch_h*patch_b) |>
   filter(species == "PF" | species == "CF")
 
+species_switch <- data |>
+  group_by(ring_nb) |>
+  summarize(n_species = n_distinct(species)) |>
+  filter(n_species > 1) |>
+  pull(ring_nb)
+
 bad_birds <- data |>
   group_by(ring_nb) |>
   summarise(n_sexes = n_distinct(sex)) |>
   filter(n_sexes > 1) |>
   pull(ring_nb)
 bad_nests <- data |>
-  filter(ring_nb %in% bad_birds) |>
+  filter(ring_nb %in% bad_birds | ring_nb %in% species_switch) |>
   pull(yearAreaBox) |>
   unique()
 bad_nests
@@ -127,7 +133,7 @@ plotdat <- combined_data |>
     prop_hybrid = hybrid_nests / total_nests
   )
 
-scale_factor <- 200   # experiment with this
+scale_factor <- 200   
 
 ggplot(plotdat, aes(year)) +
   geom_col(aes(y = hybrid_nests), fill = "steelblue") +
