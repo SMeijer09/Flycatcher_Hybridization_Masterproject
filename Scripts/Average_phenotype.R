@@ -61,10 +61,14 @@ male_data <- filtered_data |>
   filter(sex=='male') |>
   rename_with(~ paste0(.x, "_m"), -c(yearAreaBox, year, nestbox, fledge_nb, hybridnest, n_birds))
 
-combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","fledge_nb","hybridnest","n_birds")) |> filter(!is.na(ring_nb_m))
+combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","fledge_nb","hybridnest","n_birds")) |> filter(!is.na(ring_nb_m)) |>
+  group_by(ring_nb_f) |>
+  mutate(n_years = n_distinct(year),
+         n_hybrid_years = sum(hybridnest),
+         prop_hybrid_years = n_hybrid_years/n_years) 
 view(combined_data)
 
-avg_data <- combined_data |> select(ring_nb_f,year, species_f, age_category_f, hybridnest, ring_nb_m, species_m, tarsus_m, tail_m, wing_m, beak_m, patch_size_m, sum_of_white_on_primaries_m, age_category_m, mass_m) |>
+avg_data <- combined_data |> select(ring_nb_f,year, species_f, age_category_f, hybridnest, ring_nb_m, species_m, tarsus_m, tail_m, wing_m, beak_m, patch_size_m, sum_of_white_on_primaries_m, age_category_m, mass_m,prop_hybrid_years) |>
   group_by(ring_nb_f) |> 
   mutate(n_hybridized = sum(hybridnest)) |>
   filter(hybridnest == 0) |>
@@ -77,6 +81,7 @@ avg_data <- combined_data |> select(ring_nb_f,year, species_f, age_category_f, h
             avg_wing_patch_m = mean(sum_of_white_on_primaries_m, na.rm=TRUE),
             avg_mass_m = mean(mass_m, na.rm=TRUE),
             n_hybridized = first(n_hybridized),
+            prop_hybrid_years = first(prop_hybrid_years),
             stdev_patch_m = sd(patch_size_m, na.rm=TRUE),
             n_males = n()) |>
   mutate(hybridized = ifelse(n_hybridized > 0, 1, 0)) 
@@ -193,3 +198,22 @@ data_pf_1 |>
               print(n=Inf) |>
   ggplot(aes(y=avg_tarsus_m, x=species_m)) + geom_boxplot() + theme_minimal() + facet_wrap(~ring_nb_f)
 
+
+#modelling with proportion of hybrid years as response variable
+m1pf_prop <- glm(prop_hybrid_years ~ avg_patch_size_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m1pf_prop)
+m2pf_prop <- glm(prop_hybrid_years ~ avg_wing_patch_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m2pf_prop)
+m3pf_prop <- glm(prop_hybrid_years ~ avg_tarsus_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m3pf_prop)
+m4pf_prop <- glm(prop_hybrid_years ~ avg_wing_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
+summary(m4pf_prop)
+
+m1cf_prop <- glm(prop_hybrid_years ~ avg_patch_size_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m1cf_prop)
+m2cf_prop <- glm(prop_hybrid_years ~ avg_wing_patch_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m2cf_prop)
+m3cf_prop <- glm(prop_hybrid_years ~ avg_tarsus_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m3cf_prop)
+m4cf_prop <- glm(prop_hybrid_years ~ avg_wing_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
+summary(m4cf_prop)
