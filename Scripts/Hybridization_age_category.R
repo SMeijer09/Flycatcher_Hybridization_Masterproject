@@ -86,3 +86,9 @@ ggplot(model_data, aes(x=factor(age_category_corrected_m), fill=as.factor(hybrid
   geom_bar(position="fill") +
   labs(x="Male Age Category", y="Proportion of Hybrid Nests", fill="Hybrid Nest") +
   theme_minimal() + facet_wrap(~species_f)
+
+#count number of each age category per species and that hybridize
+model_data |> group_by(species_f,hybridnest,age_category_corrected_f) |>
+  summarise(individuals = n())
+
+            
