@@ -5,7 +5,7 @@ library(patchwork)
 library(car)
 library(emmeans)
 library(ggeffects)
-data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences.csv") |>
+data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences_updated_08.26.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b),
          tail = as.numeric(tail),
@@ -14,7 +14,8 @@ data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hyb
          mass = as.numeric(mass),
          beak = as.numeric(beak),
          patch_size = patch_h*patch_b) |>
-  filter(species == "PF" | species == "CF")
+  filter(species == "PF" | species == "CF") |>
+  select(-X,-measurer,-hq)
 
 species_switch <- data |>
   group_by(ring_nb) |>
@@ -56,12 +57,12 @@ filtered_data <- data_clean |>
 
 female_data <- filtered_data |>
   filter(sex=="female") |>
-  rename_with(~ paste0(.x, "_f"), -c(yearAreaBox, year, nestbox, fledge_nb, hybridnest, n_birds))
+  rename_with(~ paste0(.x, "_f"), -c(yearAreaBox, year, nestbox, fledge_nb_new, hybridnest, n_birds))
 male_data <- filtered_data |>
   filter(sex=='male') |>
-  rename_with(~ paste0(.x, "_m"), -c(yearAreaBox, year, nestbox, fledge_nb, hybridnest, n_birds))
+  rename_with(~ paste0(.x, "_m"), -c(yearAreaBox, year, nestbox, fledge_nb_new, hybridnest, n_birds))
 
-combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","fledge_nb","hybridnest","n_birds")) |> filter(!is.na(ring_nb_m))
+combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","fledge_nb_new","hybridnest","n_birds")) |> filter(!is.na(ring_nb_m))
 view(combined_data)
 
 #what are the proportions that hybridize per species in comparison to non hybrid pairs
