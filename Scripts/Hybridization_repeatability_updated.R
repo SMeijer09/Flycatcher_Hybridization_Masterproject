@@ -84,11 +84,16 @@ combined_data |> #check which ring_nb_f have more than 1 hybridnest
 
 str(combined_data)
 
-repeat_data <- combined_data |> select(yearAreaBox,year,nestbox,ring_nb_f, species_f, hybridnest) |>
+repeat_data <- combined_data |>
+  select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest) |>
   group_by(ring_nb_f) |>
-  mutate(previous_hybrid = lag(cumsum(hybridnest), default = 0)) |>
-  ungroup() |>
-  mutate(previous_hybrid_binary = ifelse(previous_hybrid > 0, 1, 0)) 
+  arrange(year, .by_group = TRUE) |>
+  mutate(
+    previous_hybrid = lag(cumsum(hybridnest), default = 0),
+    previous_hybrid_binary = ifelse(previous_hybrid > 0, 1, 0)
+  ) |>
+  ungroup()
+
 view(repeat_data)
 
 m1 <- glm(hybridnest ~ previous_hybrid + species_f + factor(year), data = repeat_data, family = binomial)
