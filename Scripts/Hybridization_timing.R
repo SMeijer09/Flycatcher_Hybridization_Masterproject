@@ -234,4 +234,8 @@ ggplot(model_data1, aes(x = laying_date)) +
   labs(
     x = "Laying date",
     y = "Number of nests"
-  )
+  ) +
+  scale_y_continuous(
+    breaks = seq(-200, 700, by = 100),
+    labels = abs(seq(-200, 700, by = 100))
+  ) 
