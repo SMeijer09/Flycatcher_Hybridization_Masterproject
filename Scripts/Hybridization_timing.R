@@ -129,5 +129,109 @@ ggplot(model_data, aes(x=laying_date_relative, y=hybridnest, color=species_f)) +
   scale_x_continuous(breaks = seq(-50, 50, by = 5)) +
   scale_y_continuous(breaks = seq(0, 1, by = 0.1))
 
-#ok this is for the laying date adjusted to the two species together, but they have different timing so maybe it should be seperated instead!
+#ok this is for the laying date adjusted to the two species together, but they have different timing so maybe it should be separated instead!
+#lets give that a try
 
+model_data1 <- combined_data |> select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest, 
+    laying_date) |> group_by(year, species_f) |>
+  mutate(laying_date_relative = laying_date - mean(laying_date, na.rm = TRUE),
+         laying_date_z = (laying_date - mean(laying_date, na.rm = TRUE)) /
+           sd(laying_date, na.rm = TRUE)) |>
+  ungroup()
+
+m1_species <- glmer(hybridnest ~ laying_date_relative + (1|year), data=model_data1, family=binomial)
+summary(m1_species)
+m2_species <- glmer(hybridnest ~ laying_date_relative * species_f + (1|year), data=model_data1, family=binomial)
+summary(m2_species)
+m3_species <- glmer(hybridnest ~ laying_date_z + (1|year), data=model_data1, family=binomial)
+summary(m3_species)
+m4_species <- glmer(hybridnest ~ laying_date_z * species_f + (1|year), data=model_data1, family=binomial)
+summary(m4_species)
+
+#show a figure with the laying date distribution per year per species
+ggplot(model_data1, aes(x=laying_date_relative, fill=species_f)) +
+  geom_histogram(position="identity", alpha=0.5, bins=20) +
+  theme_classic() +
+  labs(x="Relative laying date", y="Count") +
+  scale_x_continuous(breaks = seq(-50, 50, by = 5)) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10)) +
+  facet_wrap(~year)
+
+#again plot the laying date with hybridnest per species, but now with the relative laying date per species
+ggplot(model_data1, aes(x=laying_date_relative, y=hybridnest, color=species_f)) +
+  geom_point(alpha=0.5) +
+  geom_smooth(method="glm", method.args=list(family="binomial"), se=TRUE) +
+  theme_classic() +
+  labs(x="Relative laying date per species", y="Probability of hybrid nest") +
+  scale_x_continuous(breaks = seq(-50, 50, by = 5)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1))
+
+#now with z laying date
+ggplot(model_data1, aes(x=laying_date_z, y=hybridnest, color=species_f)) +
+  geom_point(alpha=0.5) +
+  geom_smooth(method="glm", method.args=list(family="binomial"), se=TRUE) +
+  theme_classic() +
+  labs(x="Z laying date per species", y="Probability of hybrid nest") +
+  scale_x_continuous(breaks = seq(-3, 7, by = 1)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1))
+
+#plot the distribution of the laying_date_z per species overall
+ggplot(model_data1, aes(x=laying_date_z, fill=species_f)) +
+  geom_histogram(position="identity", alpha=0.5, bins=20) +
+  theme_classic() +
+  labs(x="Z laying date", y="Count") +
+  scale_x_continuous(breaks = seq(-3, 7, by = 1)) +
+  scale_y_continuous(breaks = seq(0, 1500, by = 100))
+
+#now plot a histogram of the actual laying date for each species and color the hybrid nests, but put them in 1 graph, where species and species b are on top of each other, but with different colors for the hybrid nests
+ggplot(model_data1, aes(x = laying_date)) +
+  
+  # CF: all nests
+  geom_histogram(
+    data = subset(model_data1, species_f == "CF"),
+    aes(y = after_stat(count), fill = "CF – non-hybrid"),
+    binwidth = 2,
+    alpha = 0.5
+  ) +
+  
+  # PF: all nests
+  geom_histogram(
+    data = subset(model_data1, species_f == "PF"),
+    aes(y = -after_stat(count), fill = "PF – non-hybrid"),
+    binwidth = 2,
+    alpha = 0.5
+  ) +
+  
+  # CF: hybrid nests
+  geom_histogram(
+    data = subset(model_data1, species_f == "CF" & hybridnest == 1),
+    aes(y = after_stat(count), fill = "CF – hybrid"),
+    binwidth = 2,
+    alpha = 0.8
+  ) +
+  
+  # PF: hybrid nests
+  geom_histogram(
+    data = subset(model_data1, species_f == "PF" & hybridnest == 1),
+    aes(y = -after_stat(count), fill = "PF – hybrid"),
+    binwidth = 2,
+    alpha = 0.8
+  ) +
+  
+  geom_hline(yintercept = 0) +
+  
+  scale_fill_manual(
+    name = "Nest type",
+    values = c(
+      "CF – non-hybrid" = "grey70",
+      "CF – hybrid" = "blue",
+      "PF – non-hybrid" = "grey40",
+      "PF – hybrid" = "red"
+    )
+  ) +
+  
+  theme_classic() +
+  labs(
+    x = "Laying date",
+    y = "Number of nests"
+  )
