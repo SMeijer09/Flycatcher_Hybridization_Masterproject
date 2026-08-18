@@ -161,6 +161,7 @@ summary(m3cf_f)
 m4cf_f <- glm(hybridized ~ avg_wing_m, data=subset(avg_data1,species_f=="CF"), family=binomial)
 summary(m4cf_f)
 
+#plot average tarsus distribution
 ggplot(subset(avg_data1,species_f=="PF"),aes(x=factor(hybridized),y=avg_tarsus_m)) + geom_violin()
 
 m5pf_f <- glm(n_hybridized ~ avg_patch_size_m, data=subset(avg_data1,species_f=="PF"), family=poisson)
@@ -224,3 +225,5 @@ m3cf_prop <- glm(prop_hybrid_years ~ avg_tarsus_m, data=subset(avg_data1,species
 summary(m3cf_prop)
 m4cf_prop <- glm(prop_hybrid_years ~ avg_wing_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
 summary(m4cf_prop)
+
+
