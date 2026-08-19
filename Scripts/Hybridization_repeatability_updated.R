@@ -228,7 +228,7 @@ repeat_data1 |>
 #plotting the raw data 
 
 raw <- repeat_data1 |>
-  group_by(species_f, previous_hybrid) |>
+  group_by(species_f, previous_hybrid_binary) |>
   summarise(
     prop = mean(hybridnest),
     n = n(),
@@ -236,9 +236,21 @@ raw <- repeat_data1 |>
   )
 
 ggplot(raw,
-       aes(previous_hybrid, prop,
+       aes(previous_hybrid_binary, prop,
            colour = species_f,
            group = species_f)) +
-  geom_line() +
-  scale_y_continuous(labels = scales::percent)
+  geom_line() 
 
+#plot raw data but not on count instead of proportions
+raw_count <- repeat_data1 |>
+  group_by(species_f, previous_hybrid_binary) |>
+  summarise(
+    n_hybrid = sum(hybridnest),
+    n_total = n(),
+    .groups = "drop"
+  )
+ggplot(raw_count,
+       aes(previous_hybrid_binary, n_hybrid,
+           colour = species_f,
+           group = species_f)) +
+  geom_line()

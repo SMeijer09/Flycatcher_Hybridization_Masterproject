@@ -97,3 +97,9 @@ plot(pred_m2) +
     y = "Predicted probability of hybrid nest",
     color = "Species"
   )
+
+#now make a similar plot with the raw data with the numbers of hybrid to normal nests in a bar chart
+ggplot(model_data, aes(x=habitat_quality, fill=as.factor(hybridnest))) +
+  geom_bar(position="fill") +
+  labs(x="Habitat Quality", y="Proportion of Hybrid Nests", fill="Hybrid Nest") +
+  theme_minimal() + facet_wrap(~species_f)
