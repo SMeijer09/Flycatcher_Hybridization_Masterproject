@@ -98,8 +98,11 @@ plot(pred_m2) +
     color = "Species"
   )
 
+plot_data <- model_data |> #remove NA
+  filter(!is.na(habitat_quality)) |> #order habitat quality from bad to average, good, very good
+  mutate(habitat_quality = factor(habitat_quality, levels=c("bad", "average", "good", "very good")))
 #now make a similar plot with the raw data with the numbers of hybrid to normal nests in a bar chart
-ggplot(model_data, aes(x=habitat_quality, fill=as.factor(hybridnest))) +
+ggplot(plot_data, aes(x=habitat_quality, fill=as.factor(hybridnest))) +
   geom_bar(position="fill") +
   labs(x="Habitat Quality", y="Proportion of Hybrid Nests", fill="Hybrid Nest") +
   theme_minimal() + facet_wrap(~species_f)
