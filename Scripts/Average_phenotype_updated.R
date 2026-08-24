@@ -226,4 +226,88 @@ summary(m3cf_prop)
 m4cf_prop <- glm(prop_hybrid_years ~ avg_wing_m, data=subset(avg_data1,species_f=="CF"), family=poisson)
 summary(m4cf_prop)
 
+#i want to split up the average male phenotypes into before and after hybridization event, make a column in which it mentions if the male is before, after for the combined_data. order the years to ensure that the before and after is right. also add never if the individual never hybridized
+combined_data <- combined_data |>
+  arrange(ring_nb_f, year) |>
+  group_by(ring_nb_f) |>
+  mutate(
+    first_hybrid_year = ifelse(
+      any(hybridnest == 1),
+      min(year[hybridnest == 1]),
+      NA
+    ),
+    hybrid_status = case_when(
+      is.na(first_hybrid_year) ~ "never",
+      year < first_hybrid_year ~ "before",
+      year == first_hybrid_year ~ "hybrid",
+      year > first_hybrid_year ~ "after"
+    )
+  ) |>
+  ungroup() |>
+  select(-first_hybrid_year)
 
+view(combined_data)
+
+#now make an average_data table again with all the average male phenotypic traits, but split the averages in before and after hybridization
+average_data_split <- combined_data |>
+  group_by(ring_nb_f) |>
+  mutate(
+    hybridized = ifelse(any(hybridnest == 1), 1, 0)
+  ) |>
+  ungroup() |>
+  group_by(ring_nb_f, species_f, hybrid_status) |>
+  summarize(
+    avg_tarsus_m = mean(tarsus_m, na.rm = TRUE),
+    avg_tail_m = mean(tail_m, na.rm = TRUE),
+    avg_wing_m = mean(wing_m, na.rm = TRUE),
+    avg_beak_m = mean(beak_m, na.rm = TRUE),
+    avg_patch_size_m = mean(patch_size_m, na.rm = TRUE),
+    avg_wing_patch_m = mean(sum_of_white_on_primaries_m, na.rm = TRUE),
+    avg_mass_m = mean(mass_m, na.rm = TRUE),
+    n_years = n(),
+    n_hybridized = sum(hybridnest),
+    hybridized = first(hybridized)
+  ) |>
+  ungroup() 
+view(average_data_split)
+
+#now redo the previous models
+m1s_cf <- glm(hybridized ~ avg_patch_size_m, data=subset(average_data_split,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m1s_cf)
+m2s_cf <- glm(hybridized ~ avg_wing_patch_m, data=subset(average_data_split,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m2s_cf)
+m3s_cf <- glm(hybridized ~ avg_tarsus_m, data=subset(average_data_split,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m3s_cf)
+m4s_cf <- glm(hybridized ~ avg_wing_m, data=subset(average_data_split,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m4s_cf)
+
+m1s_pf <- glm(hybridized ~ avg_patch_size_m, data=subset(average_data_split,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m1s_pf)
+m2s_pf <- glm(hybridized ~ avg_wing_patch_m, data=subset(average_data_split,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m2s_pf)
+m3s_pf <- glm(hybridized ~ avg_tarsus_m, data=subset(average_data_split,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m3s_pf)
+m4s_pf <- glm(hybridized ~ avg_wing_m, data=subset(average_data_split,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+
+#now lets do it with again only females that have more than 1 entry
+average_data_split_filtered <- average_data_split |>
+  group_by(ring_nb_f) |>
+  filter(n_years > 1) |>
+  ungroup()
+m1sf_cf <- glm(hybridized ~ avg_patch_size_m, data=subset(average_data_split_filtered,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m1sf_cf)
+m2sf_cf <- glm(hybridized ~ avg_wing_patch_m, data=subset(average_data_split_filtered,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m2sf_cf)
+m3sf_cf <- glm(hybridized ~ avg_tarsus_m, data=subset(average_data_split_filtered,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m3sf_cf)
+m4sf_cf <- glm(hybridized ~ avg_wing_m, data=subset(average_data_split_filtered,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m4sf_cf)
+
+m1sf_pf <- glm(hybridized ~ avg_patch_size_m, data=subset(average_data_split_filtered,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m1sf_pf)
+m2sf_pf <- glm(hybridized ~ avg_wing_patch_m, data=subset(average_data_split_filtered,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m2sf_pf)
+m3sf_pf <- glm(hybridized ~ avg_tarsus_m, data=subset(average_data_split_filtered,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m3sf_pf)
+m4sf_pf <- glm(hybridized ~ avg_wing_m, data=subset(average_data_split_filtered,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
+summary(m4sf_pf)

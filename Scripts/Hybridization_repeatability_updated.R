@@ -175,6 +175,13 @@ summary(m4f)
 m5f <- glmer(hybridnest ~ previous_hybrid_binary * species_f + (1|year), data = repeat_data1, family = binomial)
 summary(m5f)
 
+m6f <- glmer(hybridnest ~ previous_hybrid * species_f + (1|year) + (1|ring_nb_f), data = repeat_data1, family = binomial)
+summary(m6f)
+
+m7f <- glmer(hybridnest ~ previous_hybrid_binary * species_f + (1|year) + (1|ring_nb_f), data = repeat_data1, family = binomial)
+summary(m7f)
+
+
 #calculate probabilities for each category from m3f
 newdata <- expand.grid(
   previous_hybrid = c(0, 1,2),
@@ -254,3 +261,10 @@ ggplot(raw_count,
            colour = species_f,
            group = species_f)) +
   geom_line()
+
+#now add a plot with the actual datapoints
+ggplot(repeat_data1, aes(x = previous_hybrid_binary, y = hybridnest, color = species_f)) +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 3, shape = 18) +
+  labs(x = "Previous Hybrid Nest (0 = No, 1 = Yes)", y = "Hybrid Nest (0 = No, 1 = Yes)", color = "Species") +
+  theme_minimal()
