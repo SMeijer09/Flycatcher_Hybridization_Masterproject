@@ -185,5 +185,21 @@ year_tests <- combined_data |>
   )
 print(year_tests,n=Inf)
 
+year_data <- combined_data |>
+  group_by(year) |>
+  summarise(
+    hybrid_nests = sum(hybridnest),
+    total_nests = n(),
+    nonhybrid_nests = total_nests - hybrid_nests
+  )
+
+glm_model <- glm(
+  cbind(hybrid_nests, nonhybrid_nests) ~ year,
+  data = year_data,
+  family = binomial
+)
+
+summary(glm_model)
+
 
 
