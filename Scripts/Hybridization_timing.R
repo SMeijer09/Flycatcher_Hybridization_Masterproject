@@ -168,7 +168,7 @@ ggplot(model_data1, aes(x=laying_date_relative, y=hybridnest, color=species_f)) 
 
 #now with z laying date
 ggplot(model_data1, aes(x=laying_date_z, y=hybridnest, color=species_f)) +
-  geom_point(alpha=0.5) +
+  geom_jitter(alpha=0.5,height = 0.05,width=0) +
   geom_smooth(method="glm", method.args=list(family="binomial"), se=TRUE) +
   theme_classic() +
   labs(x="Z laying date per species", y="Probability of hybrid nest") +
