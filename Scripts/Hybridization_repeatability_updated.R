@@ -181,6 +181,9 @@ summary(m6f)
 m7f <- glmer(hybridnest ~ previous_hybrid_binary * species_f + (1|year) + (1|ring_nb_f), data = repeat_data1, family = binomial)
 summary(m7f)
 
+m8f <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|ring_nb_f), data = repeat_data1, family = binomial)
+summary(m8f)
+AIC(m7f, m8f)
 
 #calculate probabilities for each category from m3f
 newdata <- expand.grid(
