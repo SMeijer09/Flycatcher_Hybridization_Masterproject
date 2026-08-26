@@ -138,9 +138,9 @@ summary(m8cf)
 ggplot(subset(avg_data,species_f=="CF"), aes(y=avg_patch_size_m, x=factor(n_hybridized))) + geom_boxplot() + theme_minimal()
 
 
-##### now do the same but remove all females with only 1 entry ######
+##### now do the same but remove all females with only 1 entry, if hybridized is 0 #####
 avg_data1 <- avg_data |>
-  filter(n_males>1)
+  filter(!(n_hybridized == 0 & n_males == 1))
 view(avg_data1)
 
 m1pf_f <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data1,species_f=="PF"), family=binomial)
@@ -292,7 +292,7 @@ m4s_pf <- glm(hybridized ~ avg_wing_m, data=subset(average_data_split,species_f=
 #now lets do it with again only females that have more than 1 entry
 average_data_split_filtered <- average_data_split |>
   group_by(ring_nb_f) |>
-  filter(n_years > 1) |>
+  filter(!(n_hybridized == 0 & n_years == 1)) |>
   ungroup()
 m1sf_cf <- glm(hybridized ~ avg_patch_size_m, data=subset(average_data_split_filtered,species_f=="CF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
 summary(m1sf_cf)
@@ -311,3 +311,114 @@ m3sf_pf <- glm(hybridized ~ avg_tarsus_m, data=subset(average_data_split_filtere
 summary(m3sf_pf)
 m4sf_pf <- glm(hybridized ~ avg_wing_m, data=subset(average_data_split_filtered,species_f=="PF" & (hybrid_status=="before" | hybrid_status=="never")), family=binomial)
 summary(m4sf_pf)
+
+#now from combined_data we make new columns for wing patch and patch size where we account for the effect of age on these traits
+
+#make boxplots for each male trait per species per age category
+ggplot(combined_data, aes(x=factor(age_category_corrected_m), y=patch_size_m, color=species_m)) + geom_boxplot() + theme_minimal()
+
+ggplot(combined_data, aes(x=factor(age_category_corrected_m), y=sum_of_white_on_primaries_m, color=species_m)) + geom_boxplot() + theme_minimal()
+
+ggplot(combined_data, aes(x=factor(age_category_corrected_m), y=wing_m, color=species_m)) + geom_boxplot() + theme_minimal()
+
+ggplot(combined_data, aes(x=factor(age_category_corrected_m), y=tarsus_m, color=species_m)) + geom_boxplot() + theme_minimal()
+
+
+#test if patch size is significantly different between age categories
+m1 <- lm(wing_m ~ age_category_corrected_m, data=subset(combined_data,species_m=="PF"))
+summary(m1)
+
+#now from combined_data we make new columns for all phenotype traits and account for the age effect before taking the averages
+combined_data <- combined_data |>
+  group_by(species_m) |>
+  mutate(
+    patch_size_m_age_adj = resid(
+      lm(patch_size_m ~ age_category_corrected_m, na.action = na.exclude)
+    ),
+    wing_patch_m_age_adj = resid(
+      lm(sum_of_white_on_primaries_m ~ age_category_corrected_m, na.action = na.exclude)
+    ),
+    wing_m_age_adj = resid(
+      lm(wing_m ~ age_category_corrected_m, na.action = na.exclude)
+    ),
+    tarsus_m_age_adj = resid(
+      lm(tarsus_m ~ age_category_corrected_m, na.action = na.exclude)
+    ),
+    beak_m_age_adj = resid(
+      lm(beak_m ~ age_category_corrected_m, na.action = na.exclude)
+    ),
+    mass_m_age_adj = resid(
+      lm(mass_m ~ age_category_corrected_m, na.action = na.exclude))) |>
+  ungroup()
+view(combined_data)
+
+avg_data_adj <- combined_data |> select(ring_nb_f,year, species_f, age_category_corrected_f, hybridnest, ring_nb_m, species_m, tarsus_m_age_adj, wing_m_age_adj, beak_m_age_adj, patch_size_m_age_adj, wing_patch_m_age_adj, age_category_corrected_m, mass_m_age_adj,prop_hybrid_years) |>
+  group_by(ring_nb_f) |> 
+  mutate(n_hybridized = sum(hybridnest)) |>
+  filter(hybridnest == 0) |>
+  summarize(species_f = first(species_f),
+            avg_tarsus_m = mean(tarsus_m_age_adj, na.rm=TRUE),
+            avg_wing_m = mean(wing_m_age_adj, na.rm=TRUE),
+            avg_beak_m = mean(beak_m_age_adj, na.rm=TRUE),
+            avg_patch_size_m = mean(patch_size_m_age_adj, na.rm=TRUE),
+            avg_wing_patch_m = mean(wing_patch_m_age_adj, na.rm=TRUE),
+            avg_mass_m = mean(mass_m_age_adj, na.rm=TRUE),
+            n_hybridized = first(n_hybridized),
+            prop_hybrid_years = first(prop_hybrid_years),
+            n_males = n()) |>
+  mutate(hybridized = ifelse(n_hybridized > 0, 1, 0)) 
+
+m1pf_adj <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data_adj,species_f=="PF"), family=binomial)  
+summary(m1pf_adj)
+m2pf_adj <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data_adj,species_f=="PF"), family=binomial)
+summary(m2pf_adj)
+m3pf_adj <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data_adj,species_f=="PF"), family=binomial)
+summary(m3pf_adj)
+m4pf_adj <- glm(hybridized ~ avg_wing_m, data=subset(avg_data_adj,species_f=="PF"), family=binomial)
+summary(m4pf_adj)
+m5pf_adj <- glm(hybridized ~ avg_beak_m, data=subset(avg_data_adj,species_f=="PF"), family=binomial)
+summary(m5pf_adj)
+m6pf_adj <- glm(hybridized ~ avg_mass_m, data=subset(avg_data_adj,species_f=="PF"), family=binomial)
+summary(m6pf_adj)
+
+m1cf_adj <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data_adj,species_f=="CF"), family=binomial)
+summary(m1cf_adj)
+m2cf_adj <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data_adj,species_f=="CF"), family=binomial)
+summary(m2cf_adj)
+m3cf_adj <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data_adj,species_f=="CF"), family=binomial)
+summary(m3cf_adj)
+m4cf_adj <- glm(hybridized ~ avg_wing_m, data=subset(avg_data_adj,species_f=="CF"), family=binomial)
+summary(m4cf_adj)
+m5cf_adj <- glm(hybridized ~ avg_beak_m, data=subset(avg_data_adj,species_f=="CF"), family=binomial)
+summary(m5cf_adj)
+m6cf_adj <- glm(hybridized ~ avg_mass_m, data=subset(avg_data_adj,species_f=="CF"), family=binomial)
+summary(m6cf_adj)
+
+avg_data1_adj <- avg_data_adj |>
+  filter(!(n_hybridized == 0 & n_males == 1))
+
+m1pf_adj_f <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data1_adj,species_f=="PF"), family=binomial)
+summary(m1pf_adj_f)
+m2pf_adj_f <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data1_adj,species_f=="PF"), family=binomial)
+summary(m2pf_adj_f)
+m3pf_adj_f <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data1_adj,species_f=="PF"), family=binomial)
+summary(m3pf_adj_f)
+m4pf_adj_f <- glm(hybridized ~ avg_wing_m, data=subset(avg_data1_adj,species_f=="PF"), family=binomial)
+summary(m4pf_adj_f)
+m5pf_adj_f <- glm(hybridized ~ avg_beak_m, data=subset(avg_data1_adj,species_f=="PF"), family=binomial)
+summary(m5pf_adj_f)
+m6pf_adj_f <- glm(hybridized ~ avg_mass_m, data=subset(avg_data1_adj,species_f=="PF"), family=binomial)
+summary(m6pf_adj_f)
+
+m1cf_adj_f <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data1_adj,species_f=="CF"), family=binomial)
+summary(m1cf_adj_f)
+m2cf_adj_f <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data1_adj,species_f=="CF"), family=binomial)
+summary(m2cf_adj_f)
+m3cf_adj_f <- glm(hybridized ~ avg_tarsus_m, data=subset(avg_data1_adj,species_f=="CF"), family=binomial)
+summary(m3cf_adj_f)
+m4cf_adj_f <- glm(hybridized ~ avg_wing_m, data=subset(avg_data1_adj,species_f=="CF"), family=binomial)
+summary(m4cf_adj_f)
+m5cf_adj_f <- glm(hybridized ~ avg_beak_m, data=subset(avg_data1_adj,species_f=="CF"), family=binomial)
+summary(m5cf_adj_f)
+m6cf_adj_f <- glm(hybridized ~ avg_mass_m, data=subset(avg_data1_adj,species_f=="CF"), family=binomial)
+summary(m6cf_adj_f)
