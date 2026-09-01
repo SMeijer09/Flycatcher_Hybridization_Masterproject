@@ -239,3 +239,30 @@ ggplot(model_data1, aes(x = laying_date)) +
     breaks = seq(-200, 700, by = 100),
     labels = abs(seq(-200, 700, by = 100))
   ) 
+
+#plot the mean and median laying date per year per species in 1 plot with the standard deviation
+ggplot(model_data1, aes(x=year, y=laying_date, color=species_f)) +
+  stat_summary(fun = mean, geom = "point", size = 3) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = 0.2) +
+  theme_classic() +
+  labs(x="Year", y="Laying date") +
+  scale_y_continuous(breaks = seq(0, 200, by = 5)) +
+  scale_x_continuous(breaks = seq(2000, 2023, by = 1)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_smooth(aes(group=species_f), method="lm", se=FALSE) 
+
+#test if the laying date has changed over the years for the species
+m1 <- lmer(laying_date ~ year * species_f + (1|ring_nb_f), data=model_data1)
+summary(m1)
+par(mfrow=c(2,2))
+plot(m1)
+
+#make a plot based on the model and include confidence interval
+ggplot(model_data1, aes(x=year, y=laying_date, color=species_f)) +
+  geom_point(alpha=0.5) +
+  geom_smooth(method="lm", se=TRUE) +
+  theme_classic() +
+  labs(x="Year", y="Laying date") +
+  scale_y_continuous(breaks = seq(0, 200, by = 5)) +
+  scale_x_continuous(breaks = seq(2000, 2023, by = 1)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
