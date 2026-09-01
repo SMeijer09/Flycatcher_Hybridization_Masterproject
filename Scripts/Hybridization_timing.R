@@ -168,10 +168,10 @@ ggplot(model_data1, aes(x=laying_date_relative, y=hybridnest, color=species_f)) 
 
 #now with z laying date
 ggplot(model_data1, aes(x=laying_date_z, y=hybridnest, color=species_f)) +
-  geom_jitter(alpha=0.5,height = 0.05,width=0) +
+  geom_jitter(alpha=0.5,height = 0.02,width=0) +
   geom_smooth(method="glm", method.args=list(family="binomial"), se=TRUE) +
   theme_classic() +
-  labs(x="Z laying date per species", y="Probability of hybrid nest") +
+  labs(x="Z laying date per species", y="Probability of mixed nest") +
   scale_x_continuous(breaks = seq(-3, 7, by = 1)) +
   scale_y_continuous(breaks = seq(0, 1, by = 0.1))
 
@@ -189,7 +189,7 @@ ggplot(model_data1, aes(x = laying_date)) +
   # CF: all nests
   geom_histogram(
     data = subset(model_data1, species_f == "CF"),
-    aes(y = after_stat(count), fill = "CF – non-hybrid"),
+    aes(y = after_stat(count), fill = "CF – Pure"),
     binwidth = 2,
     alpha = 0.5
   ) +
@@ -197,7 +197,7 @@ ggplot(model_data1, aes(x = laying_date)) +
   # PF: all nests
   geom_histogram(
     data = subset(model_data1, species_f == "PF"),
-    aes(y = -after_stat(count), fill = "PF – non-hybrid"),
+    aes(y = -after_stat(count), fill = "PF – Pure"),
     binwidth = 2,
     alpha = 0.5
   ) +
@@ -205,7 +205,7 @@ ggplot(model_data1, aes(x = laying_date)) +
   # CF: hybrid nests
   geom_histogram(
     data = subset(model_data1, species_f == "CF" & hybridnest == 1),
-    aes(y = after_stat(count), fill = "CF – hybrid"),
+    aes(y = after_stat(count), fill = "CF – Mixed"),
     binwidth = 2,
     alpha = 0.8
   ) +
@@ -213,7 +213,7 @@ ggplot(model_data1, aes(x = laying_date)) +
   # PF: hybrid nests
   geom_histogram(
     data = subset(model_data1, species_f == "PF" & hybridnest == 1),
-    aes(y = -after_stat(count), fill = "PF – hybrid"),
+    aes(y = -after_stat(count), fill = "PF – Mixed"),
     binwidth = 2,
     alpha = 0.8
   ) +
@@ -221,12 +221,12 @@ ggplot(model_data1, aes(x = laying_date)) +
   geom_hline(yintercept = 0) +
   
   scale_fill_manual(
-    name = "Nest type",
+    name = "Female Species - Nest type",
     values = c(
-      "CF – non-hybrid" = "grey70",
-      "CF – hybrid" = "blue",
-      "PF – non-hybrid" = "grey40",
-      "PF – hybrid" = "red"
+      "CF – Pure" = "grey70",
+      "CF – Mixed" = "red",
+      "PF – Pure" = "grey40",
+      "PF – Mixed" = "blue"
     )
   ) +
   
@@ -240,7 +240,7 @@ ggplot(model_data1, aes(x = laying_date)) +
     labels = abs(seq(-200, 700, by = 100))
   ) 
 
-#plot the mean and median laying date per year per species in 1 plot with the standard deviation
+#plot the mean laying date per year per species in 1 plot with the standard deviation
 ggplot(model_data1, aes(x=year, y=laying_date, color=species_f)) +
   stat_summary(fun = mean, geom = "point", size = 3) +
   stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = 0.2) +
@@ -249,7 +249,7 @@ ggplot(model_data1, aes(x=year, y=laying_date, color=species_f)) +
   scale_y_continuous(breaks = seq(0, 200, by = 5)) +
   scale_x_continuous(breaks = seq(2000, 2023, by = 1)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  geom_smooth(aes(group=species_f), method="lm", se=FALSE) 
+  geom_smooth(aes(group=species_f), method="lm", se=TRUE) 
 
 #test if the laying date has changed over the years for the species
 m1 <- lmer(laying_date ~ year * species_f + (1|ring_nb_f), data=model_data1)
