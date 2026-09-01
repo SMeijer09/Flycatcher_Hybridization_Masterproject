@@ -75,8 +75,17 @@ view(model_data)
 
 m1 <- glmer(hybridnest ~ habitat_quality + (1|year), data=model_data, family=binomial)
 summary(m1)
-m2 <- glmer(hybridnest ~ habitat_quality*species_f + (1|year), data=model_data, family=binomial)
+m2 <- glmer(hybridnest ~ habitat_quality*species_f + (1|year) + (1|ring_nb_f), data=model_data, family=binomial)
 summary(m2)
+
+#test with only females with more than 1 entry
+model_data1 <- model_data |>
+  group_by(ring_nb_f) |>
+  filter(n() > 1) |>
+  ungroup()
+
+m3 <- glmer(hybridnest ~ habitat_quality*species_f + (1|year) + (1|ring_nb_f), data=model_data1, family=binomial)
+summary(m3)
 
 #plot the hybridnest, habitat quality per species
 ggplot(model_data, aes(x=habitat_quality, y=hybridnest, color=species_f)) +
