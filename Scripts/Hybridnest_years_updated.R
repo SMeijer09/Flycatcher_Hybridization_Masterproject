@@ -147,9 +147,9 @@ ggplot(plotdat, aes(year)) +
   geom_point(aes(y = prop_hybrid * scale_factor),
              colour = "red") +
   scale_y_continuous(
-    name = "Number of hybrid nests",
+    name = "Number of mixed nests",
     sec.axis = sec_axis(~ . / scale_factor,
-                        name = "Proportion of hybrid nests")
+                        name = "Proportion of mixed nests")
   ) + theme_minimal()
 
 
