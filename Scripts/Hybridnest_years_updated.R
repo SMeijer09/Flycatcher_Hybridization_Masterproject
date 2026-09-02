@@ -67,6 +67,15 @@ male_data <- filtered_data |>
   rename_with(~ paste0(.x, "_m"), -c(yearAreaBox, year, nestbox, laying_date, day_real_hatch, hq, habitat_quality, hybridnest, n_birds))
 
 combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","hybridnest","n_birds", "laying_date", "day_real_hatch","hq","habitat_quality")) |> filter(!is.na(ring_nb_m))
+
+
+#now removing all females with more than 1 nest in a year
+combined_data <- combined_data |>
+  group_by(year, ring_nb_f) |>
+  mutate(n_entries = n()) |>
+  filter(n_entries == 1) |>
+  ungroup() |>
+  select(-n_entries)
 view(combined_data)
 
 #count the number of entries per species and hybridnest
@@ -201,5 +210,41 @@ glm_model <- glm(
 
 summary(glm_model)
 
+#### check the proportion of mixed nests per female per species in relationship to total nests of that female species
 
+year_female_data <- combined_data |>
+  group_by(year, species_f) |>
+  summarise(
+    mixed_pairs = sum(hybridnest, na.rm = TRUE),
+    conspecific_pairs = sum(!hybridnest, na.rm = TRUE),
+    .groups = "drop"
+  )
 
+year_female_data <- year_female_data |>
+  mutate(
+    prop_mixed = mixed_pairs / (mixed_pairs + conspecific_pairs)
+  )
+
+year_female_data
+
+m1 <- glm(cbind(mixed_pairs, conspecific_pairs) ~ year * species_f, data = year_female_data, family = binomial)
+summary(m1)
+
+#make a plot of this
+ggplot(year_female_data, aes(x = year, y = prop_mixed, color = species_f)) +
+  geom_line() +
+  geom_point() +
+  labs(y = "Proportion of mixed nests", x = "Year", color = "Female Species") +
+  theme_minimal()
+
+ggplot(year_female_data, 
+       aes(x = year, y = prop_mixed, color = species_f)) +
+  geom_point(size = 3) +
+  geom_line() +
+  scale_y_continuous(labels = scales::percent) +
+  theme_classic() +
+  labs(
+    x = "Year",
+    y = "Proportion of mixed-species pairings",
+    color = "Female species"
+  )
