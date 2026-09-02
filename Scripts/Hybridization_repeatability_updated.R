@@ -205,7 +205,9 @@ predf <- ggpredict(
   terms = c("previous_hybrid", "species_f")
 )
 
-plot(predf)
+plot(predf) + scale_x_continuous(breaks = c(0, 1, 2), labels = c("0", "1", "2")) +
+  labs(x = "Number of Previous Hybridization Events", y = "Predicted Probability of Mixed Nest", color = "Female Species",
+       title = "") + theme_minimal()
 
 #do the same for m4
 newdata1 <- expand.grid(
@@ -227,7 +229,9 @@ pred1f <- ggpredict(
   terms = c("previous_hybrid_binary", "species_f")
 )
 
-plot(pred1f)
+plot(pred1f) +
+  scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
+  labs(x = "Previously Hybridized", y = "Predicted Probability of Mixed Nest", color = "Female Species", title = "") + theme_minimal()
 
 #count the number of unique ring_nb per species
 repeat_data1 |>
@@ -263,7 +267,10 @@ ggplot(raw_count,
        aes(previous_hybrid_binary, n_hybrid,
            colour = species_f,
            group = species_f)) +
-  geom_line()
+  geom_line() +
+  labs(x = "Previously Hybridized", y = "Number of Mixed Pairs", color = "Female Species") + theme_minimal() +
+  scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
+  scale_y_continuous(breaks = seq(0, max(raw_count$n_hybrid), by = 5)) 
 
 #now add a plot with the actual datapoints
 ggplot(repeat_data1, aes(x = previous_hybrid_binary, y = hybridnest, color = species_f)) +

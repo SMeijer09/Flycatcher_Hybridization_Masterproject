@@ -194,7 +194,7 @@ ggplot(age_data, aes(x = factor(age), fill = species)) +
   ) +
   labs(
     x = "Age category",
-    y = "Number of Birds"
+    y = "Number of Observations"
   ) +
   theme_minimal()
 
@@ -223,7 +223,7 @@ ggplot(age_data, aes(x = species, fill = age)) +
   ) +
   labs(
     x = "Species",
-    y = "Number of Birds"
+    y = "Number of Observations"
   ) +
   theme_minimal() +
   scale_y_continuous(breaks=seq(0, 7000, by=1000)) 
