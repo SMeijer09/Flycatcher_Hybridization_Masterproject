@@ -69,8 +69,12 @@ male_data <- filtered_data |>
 combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","hybridnest","n_birds", "laying_date", "day_real_hatch","hq","habitat_quality")) |> filter(!is.na(ring_nb_m))
 view(combined_data)
 
-model_data <- combined_data |> select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest, age_category_corrected_f, age_category_corrected_m)
+model_data <- combined_data |> select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest, age_category_corrected_f, age_category_corrected_m) |>
+  mutate(age_category_corrected_f = factor(age_category_corrected_f),
+         age_category_corrected_m = factor(age_category_corrected_m))
 view(model_data)
+str(model_data)
+
 
 m1 <- glmer(hybridnest ~ age_category_corrected_f + (1|year), data=model_data, family=binomial)
 summary(m1)
