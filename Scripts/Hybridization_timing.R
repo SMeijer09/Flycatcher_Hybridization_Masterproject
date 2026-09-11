@@ -257,6 +257,13 @@ summary(m1)
 par(mfrow=c(2,2))
 plot(m1)
 
+#correct the model for random factor year
+model_data1$year_random <- as.factor(model_data1$year)
+m2 <- lmer(laying_date ~ year * species_f + (1|year_random) + (1|ring_nb_f), data=model_data1)
+summary(m2)
+par(mfrow=c(2,2))
+plot(m2)
+
 #make a plot based on the model and include confidence interval
 ggplot(model_data1, aes(x=year, y=laying_date, color=species_f)) +
   geom_point(alpha=0.5) +
@@ -266,3 +273,84 @@ ggplot(model_data1, aes(x=year, y=laying_date, color=species_f)) +
   scale_y_continuous(breaks = seq(0, 200, by = 5)) +
   scale_x_continuous(breaks = seq(2000, 2023, by = 1)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+pred <- ggpredict(
+  m2,
+  terms = c("year", "species_f")
+)
+
+head(pred)
+
+ggplot(pred, aes(x = x, y = predicted, colour = group)) +
+  geom_ribbon(
+    aes(ymin = conf.low, ymax = conf.high, fill = group),
+    alpha = 0.2,
+    colour = NA
+  ) +
+  geom_line(linewidth = 1.2) +
+  labs(
+    x = "Year",
+    y = "Predicted laying date",
+    colour = "Species",
+    fill = "Species"
+  ) +
+  scale_colour_manual(
+    values = c("CF" = "#ff7f0e", "PF" = "#1f77b4"),
+    labels = c("CF" = "Collared Flycatcher",
+               "PF" = "Pied Flycatcher")
+  ) +
+  scale_fill_manual(
+    values = c("CF" = "#ff7f0e", "PF" = "#1f77b4"),
+    labels = c("CF" = "Collared Flycatcher",
+               "PF" = "Pied Flycatcher")
+  ) +
+  theme_classic()
+
+ggplot() +
+  geom_jitter(
+    data = model_data1,
+    aes(x = year, y = laying_date, colour = species_f),
+    width = 0.15,
+    height = 0,
+    alpha = 0.08,
+    size = 1
+  ) +
+  geom_ribbon(
+    data = pred,
+    aes(
+      x = x,
+      ymin = conf.low,
+      ymax = conf.high,
+      fill = group
+    ),
+    alpha = 0.2,
+    colour = NA
+  ) +
+  geom_line(
+    data = pred,
+    aes(x = x, y = predicted, colour = group),
+    linewidth = 1.2
+  ) +
+  labs(
+    x = "Year",
+    y = "Laying date",
+    colour = "Species",
+    fill = "Species"
+  ) +
+  scale_colour_manual(
+    values = c("CF" = "#ff7f0e", "PF" = "#1f77b4"),
+    labels = c(
+      "CF" = "Collared Flycatcher",
+      "PF" = "Pied Flycatcher"
+    )
+  ) +
+  scale_fill_manual(
+    values = c("CF" = "#ff7f0e", "PF" = "#1f77b4"),
+    labels = c(
+      "CF" = "Collared Flycatcher",
+      "PF" = "Pied Flycatcher"
+    )
+  ) +
+  theme_classic() +
+  scale_y_continuous(breaks = seq(0, 50, by = 10)) +
+  scale_x_continuous(breaks = seq(2003, 2023, by = 5)) 

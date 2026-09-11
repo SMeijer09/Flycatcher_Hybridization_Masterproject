@@ -288,3 +288,122 @@ ggplot(hybrid_counts, aes(x = year, y = n, color = species_f, group = species_f)
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) 
+
+
+#test if years with less collared nests have more pied nests
+nest_data <- combined_data %>%
+  mutate(
+    nest_type = case_when(
+      hybridnest == 0 & species_f == "CF" ~ "CF pure",
+      hybridnest == 0 & species_f == "PF" ~ "PF pure",
+      hybridnest == 1 ~ "Mixed"
+    )
+  )
+
+year_species <- nest_data %>%
+  filter(hybridnest == 0) %>%
+  count(year, species_f) %>%
+  tidyr::pivot_wider(
+    names_from = species_f,
+    values_from = n,
+    values_fill = 0
+  )
+year_species
+
+cor.test(
+  year_species$CF,
+  year_species$PF,
+  method = "spearman"
+)
+
+year_species_change <- year_species %>%
+  arrange(year) %>%
+  mutate(
+    change_CF = CF - lag(CF),
+    change_PF = PF - lag(PF)
+  )
+
+cor.test(
+  year_species_change$change_CF,
+  year_species_change$change_PF,
+  method = "spearman",
+  use = "complete.obs"
+)
+
+
+#now testing if the species balance has an effect on the amount of mixed nests.
+
+year_species <- nest_data %>%
+  filter(hybridnest == 0) %>%
+  count(year, species_f) %>%
+  tidyr::pivot_wider(
+    names_from = species_f,
+    values_from = n,
+    values_fill = 0
+  ) %>%
+  mutate(
+    total_pure = CF + PF,
+    prop_CF = CF / total_pure,
+    prop_PF = PF / total_pure
+  )
+year_species <- year_species %>%
+  mutate(
+    species_balance = pmin(prop_CF, prop_PF)
+  )
+year_hybrid <- nest_data %>%
+  group_by(year) %>%
+  summarise(
+    mixed = sum(hybridnest == 1),
+    total = n(),
+    .groups = "drop"
+  )
+year_analysis <- year_hybrid %>%
+  left_join(
+    year_species %>%
+      select(year, CF, PF, species_balance),
+    by = "year"
+  )
+year_analysis 
+
+
+m_balance <- glm(
+  cbind(mixed, total - mixed) ~ species_balance,
+  family = binomial,
+  data = year_analysis
+)
+
+summary(m_balance)
+
+m_species <- glm(
+  cbind(mixed, total - mixed) ~ CF + PF,
+  family = binomial,
+  data = year_analysis
+)
+
+summary(m_species)
+
+
+#null distribution for to see if a species is more likely to hybridize
+n_hybrid <- sum(combined_data$hybridnest == 1)
+set.seed(123)
+
+n_perm <- 10000
+
+observed_diff <- with(
+  combined_data,
+  mean(hybridnest[species_f == "PF"]) -
+    mean(hybridnest[species_f == "CF"])
+)
+
+null_dist <- replicate(n_perm, {
+  
+  shuffled_hybrid <- sample(combined_data$hybridnest)
+  
+  mean(shuffled_hybrid[combined_data$species_f == "PF"]) -
+    mean(shuffled_hybrid[combined_data$species_f == "CF"])
+})
+
+p_value <- mean(abs(null_dist) >= abs(observed_diff))
+
+observed_diff
+p_value

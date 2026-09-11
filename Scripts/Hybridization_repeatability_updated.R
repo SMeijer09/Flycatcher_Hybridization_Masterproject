@@ -6,6 +6,7 @@ library(patchwork)
 library(car)
 library(emmeans)
 library(ggeffects)
+library(rptR)
 data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences_updated_08.26.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b),
@@ -105,7 +106,7 @@ summary(m2)
 m3 <- glmer(hybridnest ~ previous_hybrid + species_f + (1|year), data = repeat_data, family = binomial)
 summary(m3)
 
-m4 <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year), data = repeat_data, family = binomial)
+m4 <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|ring_nb_f), data = repeat_data, family = binomial)
 summary(m4)
 
 #calculate probabilities for each category from m3
@@ -150,7 +151,10 @@ pred1 <- ggpredict(
   terms = c("previous_hybrid_binary", "species_f")
 )
 
-plot(pred1)
+plot(pred1)  +
+  scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
+  labs(x = "Previously Hybridized", y = "Predicted Probability of Mixed Nest", color = "Female Species", title = "") + theme_minimal()
+
 
 ###### now do the same but remove all birds with only 1 entry #######
 repeat_data1 <- repeat_data |>
@@ -278,3 +282,72 @@ ggplot(repeat_data1, aes(x = previous_hybrid_binary, y = hybridnest, color = spe
   stat_summary(fun = mean, geom = "point", size = 3, shape = 18) +
   labs(x = "Previous Hybrid Nest (0 = No, 1 = Yes)", y = "Hybrid Nest (0 = No, 1 = Yes)", color = "Species") +
   theme_minimal()
+
+
+#now lets do the rptR repeatability tests as suggested
+
+repeat_data %>%
+  count(ring_nb_f) %>%
+  count(n, name = "number_of_females")
+
+rpt_hybrid_test$R
+str(rpt_hybrid_test, max.level = 2)
+rpt_hybrid_test$CI
+
+repeat_data_2 <- repeat_data %>%
+  group_by(ring_nb_f) %>%
+  filter(n() >= 2) %>%
+  ungroup()
+
+table(repeat_data_2$hybridnest)
+nrow(repeat_data_2)
+length(unique(repeat_data_2$ring_nb_f))
+
+
+rpt_hybrid <- rptBinary(
+  hybridnest ~ (1 | ring_nb_f),
+  grname = "ring_nb_f",
+  data = repeat_data_2,
+  nboot = 100
+)
+
+summary(rpt_hybrid)
+
+rpt_hybrid_species <- rptBinary(
+  hybridnest ~ species_f + (1 | ring_nb_f),
+  grname = "ring_nb_f",
+  data = repeat_data_2,
+  nboot = 100
+)
+
+summary(rpt_hybrid_species)
+
+rpt_hybrid_species_1000 <- rptBinary(
+  hybridnest ~ species_f + (1 | ring_nb_f),
+  grname = "ring_nb_f",
+  data = repeat_data_2,
+  nboot = 1000
+)
+
+summary(rpt_hybrid_species_1000)
+
+library(rptR)
+
+d <- repeat_data_2
+d$ring_nb_f <- factor(d$ring_nb_f)
+d$species_f <- factor(d$species_f)
+d$year_sc   <- as.numeric(scale(d$year))   # numeric year trend
+
+rpt_final <- rptBinary(
+  hybridnest ~ species_f + year_sc + (1 | ring_nb_f),
+  grname = "ring_nb_f",
+  data = d,
+  nboot = 1000,
+  npermut = 1000
+)
+
+summary(rpt_final)
+
+rpt_final$R
+rpt_final$CI_emp
+rpt_final$P
