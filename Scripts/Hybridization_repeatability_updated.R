@@ -290,10 +290,6 @@ repeat_data %>%
   count(ring_nb_f) %>%
   count(n, name = "number_of_females")
 
-rpt_hybrid_test$R
-str(rpt_hybrid_test, max.level = 2)
-rpt_hybrid_test$CI
-
 repeat_data_2 <- repeat_data %>%
   group_by(ring_nb_f) %>%
   filter(n() >= 2) %>%
@@ -351,3 +347,46 @@ summary(rpt_final)
 rpt_final$R
 rpt_final$CI_emp
 rpt_final$P
+
+rpt_final_species <- rptBinary(
+  hybridnest ~ species_f + (1 | ring_nb_f) + (1 | year),
+  grname = "ring_nb_f",
+  data = d,
+  nboot = 1000,
+  npermut = 0
+)
+summary(rpt_final_species)
+
+#now lets try for the species seperately
+d_pf <- repeat_data_2 |>
+  filter(species_f == "PF")
+d_cf <- repeat_data_2 |>
+  filter(species_f == "CF")
+
+rpt_pf <- rptBinary(
+  hybridnest ~ (1 | ring_nb_f) + (1|year),
+  grname = "ring_nb_f",
+  data = d_pf,
+  nboot = 1000,
+  npermut = 0
+)
+
+rpt_cf <- rptBinary(
+  hybridnest ~ (1 | ring_nb_f) + (1|year),
+  grname = "ring_nb_f",
+  data = d_cf,
+  nboot = 1000,
+  npermut = 0
+)
+
+summary(rpt_pf)
+summary(rpt_cf)
+
+rpt_final_species <- rptBinary(
+  hybridnest ~ species_f + (1 | ring_nb_f) + (1 | year),
+  grname = "ring_nb_f",
+  data = d,
+  nboot = 1000,
+  npermut = 0
+)
+summary(rpt_final_species)
