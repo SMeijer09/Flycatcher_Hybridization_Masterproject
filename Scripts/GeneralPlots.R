@@ -209,7 +209,7 @@ ggplot(age_data, aes(x = factor(age), fill = species)) +
 #rename age categories to 1 juvenile 2 adult
 age_data <- age_data |>
   mutate(age = case_when(
-    age == 1 ~ "Juvenile",
+    age == 1 ~ "First-year",
     age == 2 ~ "Adult",
     TRUE ~ as.character(age)
   ))
@@ -219,7 +219,7 @@ ggplot(age_data, aes(x = species, fill = age)) +
   scale_fill_manual(
     name = "Age category",
     values = c(
-      "Juvenile" = "#66c2a5",
+      "First-year" = "#66c2a5",
       "Adult" = "#fc8d62"
     )
   ) +
