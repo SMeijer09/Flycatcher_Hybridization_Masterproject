@@ -69,6 +69,14 @@ male_data <- filtered_data |>
 combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","hybridnest","n_birds", "laying_date", "day_real_hatch","hq","habitat_quality")) |> filter(!is.na(ring_nb_m))
 view(combined_data)
 
+#now removing all females with more than 1 nest in a year
+combined_data <- combined_data |>
+  group_by(year, ring_nb_f) |>
+  mutate(n_entries = n()) |>
+  filter(n_entries == 1) |>
+  ungroup() |>
+  select(-n_entries)
+
 #plot laying date and hatching date
 hist(combined_data$laying_date, breaks = 20)
 

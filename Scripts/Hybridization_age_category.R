@@ -69,6 +69,14 @@ male_data <- filtered_data |>
 combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","hybridnest","n_birds", "laying_date", "day_real_hatch","hq","habitat_quality")) |> filter(!is.na(ring_nb_m))
 view(combined_data)
 
+#now removing all females with more than 1 nest in a year
+combined_data <- combined_data |>
+  group_by(year, ring_nb_f) |>
+  mutate(n_entries = n()) |>
+  filter(n_entries == 1) |>
+  ungroup() |>
+  select(-n_entries)
+
 model_data <- combined_data |> select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest, age_category_corrected_f, age_category_corrected_m) |>
   mutate(age_category_corrected_f = factor(age_category_corrected_f),
          age_category_corrected_m = factor(age_category_corrected_m))

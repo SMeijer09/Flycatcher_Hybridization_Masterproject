@@ -283,7 +283,8 @@ ggplot(raw_count,
   geom_line() +
   labs(x = "Previously Hybridized", y = "Number of Mixed Pairs", color = "Female Species") + theme_minimal() +
   scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
-  scale_y_continuous(breaks = seq(0, max(raw_count$n_hybrid), by = 5)) 
+  scale_y_continuous(breaks = seq(0, max(raw_count$n_hybrid), by = 5)) + 
+  geom_point()
 
 #now add a plot with the actual datapoints
 ggplot(repeat_data1, aes(x = previous_hybrid_binary, y = hybridnest, color = species_f)) +
