@@ -73,6 +73,16 @@ combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","
          prop_hybrid_years = n_hybrid_years/n_years) 
 view(combined_data)
 
+#now removing all females with more than 1 nest in a year
+combined_data <- combined_data |>
+  group_by(year, ring_nb_f) |>
+  mutate(n_entries = n()) |>
+  filter(n_entries == 1) |>
+  ungroup() |>
+  select(-n_entries)
+view(combined_data)
+
+
 
 
 avg_data <- combined_data |> select(ring_nb_f,year, species_f, age_category_corrected_f, hybridnest, ring_nb_m, species_m, tarsus_m, tail_m, wing_m, beak_m, patch_size_m, sum_of_white_on_primaries_m, age_category_corrected_m, mass_m,prop_hybrid_years) |>
