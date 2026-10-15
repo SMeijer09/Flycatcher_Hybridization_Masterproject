@@ -95,12 +95,13 @@ combined_data |> #check which ring_nb_f have more than 1 hybridnest
 str(combined_data)
 
 repeat_data <- combined_data |>
-  select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest) |>
+  select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest,age_category_corrected_f, habitat_quality) |>
   group_by(ring_nb_f) |>
   arrange(year, .by_group = TRUE) |>
   mutate(
     previous_hybrid = lag(cumsum(hybridnest), default = 0),
-    previous_hybrid_binary = ifelse(previous_hybrid > 0, 1, 0)
+    previous_hybrid_binary = ifelse(previous_hybrid > 0, 1, 0),
+    Area = substr(nestbox, 1, 3)
   ) |>
   ungroup()
 
@@ -162,7 +163,25 @@ pred1 <- ggpredict(
 
 plot(pred1)  +
   scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
-  labs(x = "Previously Hybridized", y = "Predicted Probability of Mixed Nest", color = "Female Species", title = "") + theme_minimal()
+  labs(x = "Previously Hybridized", y = "Predicted Probability of Mixed Nest", color = "Female Species", title = "") + theme_minimal() 
+
+plot(pred1) +
+  scale_x_continuous(
+    breaks = c(0, 1),
+    labels = c("No", "Yes")
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c("PF" = "Pied",
+               "CF" = "Collared")
+  ) +
+  labs(
+    x = "Previously Hybridized",
+    y = "Predicted Probability of Mixed Nest",
+    color = "Female Species",
+    title = ""
+  ) +
+  theme_minimal()
 
 
 ###### now do the same but remove all birds with only 1 entry #######
@@ -276,15 +295,47 @@ raw_count <- repeat_data1 |>
     n_total = n(),
     .groups = "drop"
   )
-ggplot(raw_count,
-       aes(previous_hybrid_binary, n_hybrid,
-           colour = species_f,
-           group = species_f)) +
+
+ggplot(
+  raw_count,
+  aes(
+    previous_hybrid_binary,
+    n_hybrid,
+    colour = species_f,
+    group = species_f
+  )
+) +
   geom_line() +
-  labs(x = "Previously Hybridized", y = "Number of Mixed Pairs", color = "Female Species") + theme_minimal() +
-  scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
-  scale_y_continuous(breaks = seq(0, max(raw_count$n_hybrid), by = 5)) + 
-  geom_point()
+  geom_point() +
+  
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  
+  labs(
+    x = "Previously Hybridized",
+    y = "Total Number of Mixed Pairs",
+    color = "Female Species"
+  ) +
+  
+  theme_minimal() +
+  
+  scale_x_continuous(
+    breaks = c(0, 1),
+    labels = c("No", "Yes")
+  ) +
+  
+  scale_y_continuous(
+    breaks = seq(0, max(raw_count$n_hybrid), by = 5)
+  )
+
 
 #now add a plot with the actual datapoints
 ggplot(repeat_data1, aes(x = previous_hybrid_binary, y = hybridnest, color = species_f)) +
@@ -293,110 +344,119 @@ ggplot(repeat_data1, aes(x = previous_hybrid_binary, y = hybridnest, color = spe
   labs(x = "Previous Hybrid Nest (0 = No, 1 = Yes)", y = "Hybrid Nest (0 = No, 1 = Yes)", color = "Species") +
   theme_minimal()
 
+### redo the repeatability model but now remove the value for all birds first entry to reduce bias
+ repeat_data <- repeat_data |>
+   arrange(ring_nb_f, year) |>
+   group_by(ring_nb_f) |>
+   mutate(
+     previous_hybrid_binary = if_else(
+       row_number() == 1,
+       NA_real_,
+       previous_hybrid_binary
+     )
+   ) |>
+   ungroup()
+view(repeat_data) 
 
-#now lets do the rptR repeatability tests as suggested
+#redo the model
+mv1 <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|ring_nb_f), data = repeat_data, family = binomial)
+summary(mv1)
 
-repeat_data %>%
-  count(ring_nb_f) %>%
-  count(n, name = "number_of_females")
+#redo the predicted plots
+newdata2 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
+)
+newdata2$predicted_prob <- predict(
+  mv1,
+  newdata = newdata2,
+  type = "response",
+  re.form = NA
+)
+pred2 <- ggpredict(
+  mv1,
+  terms = c("previous_hybrid_binary", "species_f")
+)
+plot(pred2) +
+  scale_x_continuous(
+    breaks = c(0, 1),
+    labels = c("No", "Yes")
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c("PF" = "Pied",
+               "CF" = "Collared")
+  ) +
+  labs(
+    x = "Previously Hybridized",
+    y = "Predicted Probability of Mixed Nest",
+    color = "Female Species",
+    title = ""
+  ) +
+  theme_minimal()
 
-repeat_data_2 <- repeat_data %>%
-  group_by(ring_nb_f) %>%
-  filter(n() >= 2) %>%
+repeat_data <- repeat_data |>
+  group_by(ring_nb_f) |>
+  arrange(year, .by_group = TRUE) |>
+  mutate(
+    previous_hybrid_next = lag(hybridnest)
+  ) |>
   ungroup()
 
-table(repeat_data_2$hybridnest)
-nrow(repeat_data_2)
-length(unique(repeat_data_2$ring_nb_f))
+mv2 <- glmer(hybridnest ~ previous_hybrid_next + species_f + (1|year) + (1|ring_nb_f), data = repeat_data, family = binomial)
+summary(mv2)
 
 
-rpt_hybrid <- rptBinary(
-  hybridnest ~ (1 | ring_nb_f),
-  grname = "ring_nb_f",
-  data = repeat_data_2,
-  nboot = 100
+repeat_datav2 <- repeat_data |>
+  group_by(ring_nb_f) |>
+  arrange(year, .by_group = TRUE) |>
+  mutate(
+    previous_hybrid_year = case_when(
+      year - lag(year) == 1 ~ lag(hybridnest),
+      TRUE ~ NA_real_
+    )
+  ) |>
+  ungroup()
+
+mv3 <- glmer(hybridnest ~ previous_hybrid_year + species_f + (1|year) + (1|ring_nb_f), data = repeat_datav2, family = binomial)
+summary(mv3)
+
+marea <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|Area) + (1|ring_nb_f), data = repeat_data, family = binomial)
+
+marea_year <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|Area) + (1|year:Area) + (1|ring_nb_f), data = repeat_data, family = binomial)
+summary(marea)
+summary(marea_year)
+
+#redo plots with marea
+newdata3 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
 )
 
-summary(rpt_hybrid)
-
-rpt_hybrid_species <- rptBinary(
-  hybridnest ~ species_f + (1 | ring_nb_f),
-  grname = "ring_nb_f",
-  data = repeat_data_2,
-  nboot = 100
+newdata3$predicted_prob <- predict(
+  marea,
+  newdata = newdata3,
+  type = "response",
+  re.form = NA
 )
-
-summary(rpt_hybrid_species)
-
-rpt_hybrid_species_1000 <- rptBinary(
-  hybridnest ~ species_f + (1 | ring_nb_f),
-  grname = "ring_nb_f",
-  data = repeat_data_2,
-  nboot = 1000
+pred3 <- ggpredict(
+  marea,
+  terms = c("previous_hybrid_binary", "species_f")
 )
-
-summary(rpt_hybrid_species_1000)
-
-library(rptR)
-
-d <- repeat_data_2
-d$ring_nb_f <- factor(d$ring_nb_f)
-d$species_f <- factor(d$species_f)
-d$year_sc   <- as.numeric(scale(d$year))   # numeric year trend
-
-rpt_final <- rptBinary(
-  hybridnest ~ species_f + year_sc + (1 | ring_nb_f),
-  grname = "ring_nb_f",
-  data = d,
-  nboot = 1000,
-  npermut = 1000
-)
-
-summary(rpt_final)
-
-rpt_final$R
-rpt_final$CI_emp
-rpt_final$P
-
-rpt_final_species <- rptBinary(
-  hybridnest ~ species_f + (1 | ring_nb_f) + (1 | year),
-  grname = "ring_nb_f",
-  data = d,
-  nboot = 1000,
-  npermut = 0
-)
-summary(rpt_final_species)
-
-#now lets try for the species seperately
-d_pf <- repeat_data_2 |>
-  filter(species_f == "PF")
-d_cf <- repeat_data_2 |>
-  filter(species_f == "CF")
-
-rpt_pf <- rptBinary(
-  hybridnest ~ (1 | ring_nb_f) + (1|year),
-  grname = "ring_nb_f",
-  data = d_pf,
-  nboot = 1000,
-  npermut = 0
-)
-
-rpt_cf <- rptBinary(
-  hybridnest ~ (1 | ring_nb_f) + (1|year),
-  grname = "ring_nb_f",
-  data = d_cf,
-  nboot = 1000,
-  npermut = 0
-)
-
-summary(rpt_pf)
-summary(rpt_cf)
-
-rpt_final_species <- rptBinary(
-  hybridnest ~ species_f + (1 | ring_nb_f) + (1 | year),
-  grname = "ring_nb_f",
-  data = d,
-  nboot = 1000,
-  npermut = 0
-)
-summary(rpt_final_species)
+plot(pred3) +
+  scale_x_continuous(
+    breaks = c(0, 1),
+    labels = c("No", "Yes")
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c("PF" = "Pied",
+               "CF" = "Collared")
+  ) +
+  labs(
+    x = "Previously Hybridized",
+    y = "Predicted Probability of Mixed Nest",
+    color = "Female Species",
+    title = ""
+  ) +
+  theme_minimal()

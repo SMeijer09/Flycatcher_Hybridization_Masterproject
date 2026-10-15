@@ -141,7 +141,7 @@ ggplot(model_data, aes(x=laying_date_relative, y=hybridnest, color=species_f)) +
 #lets give that a try
 
 model_data1 <- combined_data |> select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest, 
-    laying_date) |> group_by(year, species_f) |>
+    laying_date, age_category_corrected_f) |> group_by(year, species_f) |>
   mutate(laying_date_relative = laying_date - mean(laying_date, na.rm = TRUE),
          laying_date_z = (laying_date - mean(laying_date, na.rm = TRUE)) /
            sd(laying_date, na.rm = TRUE)) |>
@@ -175,13 +175,28 @@ ggplot(model_data1, aes(x=laying_date_relative, y=hybridnest, color=species_f)) 
   scale_y_continuous(breaks = seq(0, 1, by = 0.1))
 
 #now with z laying date
-ggplot(model_data1, aes(x=laying_date_z, y=hybridnest, color=species_f)) +
-  geom_jitter(alpha=0.5,height = 0.02,width=0) +
-  geom_smooth(method="glm", method.args=list(family="binomial"), se=TRUE) +
+ggplot(model_data1, aes(x = laying_date_z, y = hybridnest, color = species_f)) +
+  geom_jitter(alpha = 0.5, height = 0.02, width = 0) +
+  geom_smooth(
+    method = "glm",
+    method.args = list(family = "binomial"),
+    se = TRUE
+  ) +
   theme_classic() +
-  labs(x="Z laying date per species", y="Probability of mixed nest") +
+  labs(
+    x = "Z laying date per species",
+    y = "Probability of mixed nest",
+    color = "Female Species"
+  ) +
   scale_x_continuous(breaks = seq(-3, 7, by = 1)) +
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1))
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1)) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  )
 
 #plot the distribution of the laying_date_z per species overall
 ggplot(model_data1, aes(x=laying_date_z, fill=species_f)) +
@@ -362,3 +377,8 @@ ggplot() +
   theme_classic() +
   scale_y_continuous(breaks = seq(0, 50, by = 10)) +
   scale_x_continuous(breaks = seq(2003, 2023, by = 5)) 
+
+m5 <- glmer(hybridnest ~ laying_date_z * species_f + age_category_corrected_f * species_f + (1|year), data=model_data1, family=binomial)
+summary(m5)
+summary(m4_species)
+

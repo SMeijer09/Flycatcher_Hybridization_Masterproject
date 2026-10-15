@@ -162,6 +162,7 @@ summary(m3pf_f) #
 m4pf_f <- glm(hybridized ~ avg_wing_m, data=subset(avg_data1,species_f=="PF"), family=binomial)
 summary(m4pf_f)
 
+
 m1cf_f <- glm(hybridized ~ avg_patch_size_m, data=subset(avg_data1,species_f=="CF"), family=binomial)
 summary(m1cf_f)
 m2cf_f <- glm(hybridized ~ avg_wing_patch_m, data=subset(avg_data1,species_f=="CF"), family=binomial)
@@ -432,3 +433,360 @@ m5cf_adj_f <- glm(hybridized ~ avg_beak_m, data=subset(avg_data1_adj,species_f==
 summary(m5cf_adj_f)
 m6cf_adj_f <- glm(hybridized ~ avg_mass_m, data=subset(avg_data1_adj,species_f=="CF"), family=binomial)
 summary(m6cf_adj_f)
+
+#Make some boxplots to see that there is no sginficant differences in phenotypes
+ggplot(avg_data1_adj, aes(x=factor(hybridized), y=avg_patch_size_m, color=species_f)) + geom_boxplot() + theme_minimal()
+
+ggplot(avg_data1_adj, aes(x=factor(hybridized), y=avg_wing_patch_m, color=species_f)) + geom_boxplot() + theme_minimal()
+
+ggplot(avg_data1_adj, aes(x=factor(hybridized), y=avg_tarsus_m, color=species_f)) + geom_boxplot() + theme_minimal()
+
+ggplot(avg_data1_adj, aes(x=factor(hybridized), y=avg_wing_m, color=species_f)) + geom_boxplot() + theme_minimal()
+
+#lets do a violin 
+
+ggplot(avg_data1_adj, aes(x=factor(hybridized), y=avg_patch_size_m, color=species_f)) + geom_violin() + theme_minimal()
+
+#lets do a boxplot with datapoints
+ggplot(
+  avg_data1_adj,
+  aes(
+    x = interaction(hybridized, species_f),
+    y = avg_patch_size_m,
+    color = species_f
+  )
+) +
+  geom_boxplot(width = 0.6) +
+  geom_jitter(
+    width = 0.12,
+    alpha = 0.5
+  ) +
+  theme_minimal() +
+  labs(x = "Hybridization")
+
+p1 <- ggplot(
+  avg_data1_adj,
+  aes(
+    x = interaction(hybridized, species_f),
+    y = avg_patch_size_m,
+    color = species_f
+  )
+) +
+  geom_boxplot(
+    width = 0.55,
+    outlier.shape = NA,
+    alpha = 0.15
+  ) +
+  geom_jitter(
+    width = 0.10,
+    alpha = 0.45,
+    size = 1.8
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "0.PF" = "Non-Hybridized",
+      "0.CF" = "Non-Hybridized",
+      "1.PF" = "Hybridized",
+      "1.CF" = "Hybridized"
+    )
+  ) +
+  scale_y_continuous(
+    breaks = seq(-40, 40, by = 10)
+  ) +
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Residual Forehead Patch Size (mm²)",
+    color = "Female species"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = 11),
+  )
+
+
+p2 <- ggplot(
+  avg_data1_adj,
+  aes(
+    x = interaction(hybridized, species_f),
+    y = avg_wing_patch_m,
+    color = species_f
+  )
+) +
+  geom_boxplot(
+    width = 0.55,
+    outlier.shape = NA,
+    alpha = 0.15
+  ) +
+  geom_jitter(
+    width = 0.10,
+    alpha = 0.45,
+    size = 1.8
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "0.PF" = "Non-Hybridized",
+      "0.CF" = "Non-Hybridized",
+      "1.PF" = "Hybridized",
+      "1.CF" = "Hybridized"
+    )
+  ) +
+  scale_y_continuous(
+    breaks = seq(-40, 40, by = 10)
+  ) +
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Residual Wing Patch Size (mm)",
+    color = "Female species"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = 11),
+  )
+
+#now make the same plot but for tarsus, but then non age adjusted
+p3<- ggplot(
+  avg_data1,
+  aes(
+    x = interaction(hybridized, species_f),
+    y = avg_tarsus_m,
+    color = species_f
+  )
+) +
+  geom_boxplot(
+    width = 0.55,
+    outlier.shape = NA,
+    alpha = 0.15
+  ) +
+  geom_jitter(
+    width = 0.10,
+    alpha = 0.45,
+    size = 1.8
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "0.PF" = "Non-Hybridized",
+      "0.CF" = "Non-Hybridized",
+      "1.PF" = "Hybridized",
+      "1.CF" = "Hybridized"
+    )
+  ) +
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Tarsus Length (mm)",
+    color = "Female species"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = 11),
+  )
+
+p4 <- ggplot(
+  avg_data1,
+  aes(
+    x = interaction(hybridized, species_f),
+    y = avg_wing_m,
+    color = species_f
+  )
+) +
+  geom_boxplot(
+    width = 0.55,
+    outlier.shape = NA,
+    alpha = 0.15
+  ) +
+  geom_jitter(
+    width = 0.10,
+    alpha = 0.45,
+    size = 1.8
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "0.PF" = "Non-Hybridized",
+      "0.CF" = "Non-Hybridized",
+      "1.PF" = "Hybridized",
+      "1.CF" = "Hybridized"
+    )
+  ) +
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Wing Length (mm)",
+    color = "Female species"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = 11),
+  )
+
+#quick test what happens when i do lm instead
+mtest <- lm(avg_wing_m ~ hybridized, data= subset(avg_data1, species_f=="PF"))
+summary(mtest)
+
+#plot p1 to p4 together
+library(patchwork)
+(p1 | p2) / (p3 | p4) + plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(size = 14, face = "bold"))
+
+(p1 | p2) / (p3 | p4) +
+  plot_annotation(tag_levels = "A") &
+  theme(
+    plot.tag = element_text(size = 14, face = "bold"),
+    axis.title.y = element_text(size = 10)
+  )
+
+p5 <- ggplot(
+  avg_data1,
+  aes(
+    x = interaction(hybridized, species_f),
+    y = avg_patch_size_m,
+    color = species_f
+  )
+) +
+  geom_boxplot(
+    width = 0.55,
+    outlier.shape = NA,
+    alpha = 0.15
+  ) +
+  geom_jitter(
+    width = 0.10,
+    alpha = 0.45,
+    size = 1.8
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "0.PF" = "Non-Hybridized",
+      "0.CF" = "Non-Hybridized",
+      "1.PF" = "Hybridized",
+      "1.CF" = "Hybridized"
+    )
+  ) +
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Forehead Patch Size (mm²)",
+    color = "Female species"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = 11),
+  )
+
+p6 <- ggplot(
+  avg_data1,
+  aes(
+    x = interaction(hybridized, species_f),
+    y = avg_wing_patch_m,
+    color = species_f
+  )
+) +
+  geom_boxplot(
+    width = 0.55,
+    outlier.shape = NA,
+    alpha = 0.15
+  ) +
+  geom_jitter(
+    width = 0.10,
+    alpha = 0.45,
+    size = 1.8
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "0.PF" = "Non-Hybridized",
+      "0.CF" = "Non-Hybridized",
+      "1.PF" = "Hybridized",
+      "1.CF" = "Hybridized"
+    )
+  ) +
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Wing Patch (mm)",
+    color = "Female species"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = 11),
+  )
+
+(p5 | p6) / (p3 | p4) / (p1 | p2) +
+  plot_annotation(tag_levels = "A") &
+  theme(
+    plot.tag = element_text(size = 14, face = "bold"),
+    axis.title.y = element_text(size = 10)
+  )
+
+#ggsave("male_phenotype_boxplots.png", width = 12, height = 13, dpi = 300)
+

@@ -78,22 +78,22 @@ combined_data <- combined_data |>
   select(-n_entries)
 
 #plot the number of pure nests over time and include hybrids, seperate species
-ggplot(combined_data, aes(x = year)) +
+ggplot(
+  combined_data |>
+    mutate(
+      nest_type = case_when(
+        hybridnest == 1 ~ "Mixed Nest",
+        species_f == "PF" ~ "PF",
+        species_f == "CF" ~ "CF"
+      )
+    ),
+  aes(x = year, fill = nest_type)
+) +
   
-  # Pure nests
   geom_bar(
-    data = combined_data |> filter(hybridnest == 0),
-    aes(fill = species_f),
-    position = "dodge"
-  ) +
-  
-  # Hybrid nests
-  geom_bar(
-    data = combined_data |> filter(hybridnest == 1),
-    aes(fill = "Mixed Nest"),
     position = "dodge",
     color = "black",
-    alpha = 0.5
+    aes(alpha = nest_type == "Mixed Nest")
   ) +
   
   scale_fill_manual(
@@ -110,21 +110,32 @@ ggplot(combined_data, aes(x = year)) +
     )
   ) +
   
+  scale_alpha_manual(
+    values = c(
+      "TRUE" = 0.5,
+      "FALSE" = 1
+    ),
+    guide = "none"
+  ) +
+  
   labs(
     x = "Year",
-    y = "Count of Nests"
+    y = "Number of Nests"
   ) +
   
   scale_x_continuous(
-    breaks = seq(min(combined_data$year),
-                 max(combined_data$year), by = 1)
+    breaks = seq(
+      min(combined_data$year),
+      max(combined_data$year),
+      by = 1
+    )
   ) +
   
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  ) +
-  theme(legend.position = "bottom") 
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom",
+  )
 
 combined_data |>
   filter(!is.na(age_category_corrected_f)) |>
@@ -239,9 +250,31 @@ ggplot(age_data, aes(x = species, fill = age)) +
 
 #plot habitat quality on the x-axis and the number of nests on the y-axis, with different colors for pure nests per species. also remove NAs. Good but stack the pure and mixed pair nests
 #and order from bad, average to good verygood
-ggplot(combined_data |> filter(!is.na(habitat_quality)), aes(x = factor(habitat_quality, levels = c("bad", "average", "good", "verygood")), fill = species_f)) +
-  geom_bar(data = combined_data |> filter(!is.na(habitat_quality) & hybridnest == 0), position = "dodge") +
-  geom_bar(data = combined_data |> filter(!is.na(habitat_quality) & hybridnest == 1), aes(fill = "Mixed Nest"), position = "dodge", color = "black", alpha = 0.5) +
+ggplot(
+  combined_data |>
+    filter(!is.na(habitat_quality)) |>
+    mutate(
+      nest_type = case_when(
+        hybridnest == 1 ~ "Mixed Nest",
+        species_f == "PF" ~ "PF",
+        species_f == "CF" ~ "CF"
+      )
+    ),
+  aes(
+    x = factor(
+      habitat_quality,
+      levels = c("bad", "average", "good", "verygood")
+    ),
+    fill = nest_type
+  )
+) +
+  
+  geom_bar(
+    position = "dodge",
+    color = "black",
+    aes(alpha = nest_type == "Mixed Nest")
+  ) +
+  
   scale_fill_manual(
     name = "Nest type / Species",
     values = c(
@@ -255,12 +288,28 @@ ggplot(combined_data |> filter(!is.na(habitat_quality)), aes(x = factor(habitat_
       "Mixed Nest" = "Mixed Nest"
     )
   ) +
+  
+  scale_alpha_manual(
+    values = c(
+      "TRUE" = 0.5,
+      "FALSE" = 1
+    ),
+    guide = "none"
+  ) +
+  
   labs(
     x = "Habitat Quality",
     y = "Number of Nests"
   ) +
+  
   theme_minimal() +
-  theme(legend.position = "bottom")
+  theme(
+    legend.position = "bottom"
+  )
+
+
+
+
 
 #make a plot of the mixed pairs, and with the species of the female over the years
 hybrid_counts <- combined_data |>
@@ -299,7 +348,7 @@ ggplot(hybrid_counts, aes(x = year, y = n, color = species_f, group = species_f)
 
 
 #test if years with less collared nests have more pied nests
-nest_data <- combined_data %>%
+nest_data <- combined_data |>
   mutate(
     nest_type = case_when(
       hybridnest == 0 & species_f == "CF" ~ "CF pure",
@@ -308,9 +357,9 @@ nest_data <- combined_data %>%
     )
   )
 
-year_species <- nest_data %>%
-  filter(hybridnest == 0) %>%
-  count(year, species_f) %>%
+year_species <- nest_data |>
+  filter(hybridnest == 0) |>
+  count(year, species_f) |>
   tidyr::pivot_wider(
     names_from = species_f,
     values_from = n,
@@ -324,8 +373,8 @@ cor.test(
   method = "spearman"
 )
 
-year_species_change <- year_species %>%
-  arrange(year) %>%
+year_species_change <- year_species |>
+  arrange(year) |>
   mutate(
     change_CF = CF - lag(CF),
     change_PF = PF - lag(PF)
@@ -341,33 +390,33 @@ cor.test(
 
 #now testing if the species balance has an effect on the amount of mixed nests.
 
-year_species <- nest_data %>%
-  filter(hybridnest == 0) %>%
-  count(year, species_f) %>%
+year_species <- nest_data |>
+  filter(hybridnest == 0) |>
+  count(year, species_f) |>
   tidyr::pivot_wider(
     names_from = species_f,
     values_from = n,
     values_fill = 0
-  ) %>%
+  ) |>
   mutate(
     total_pure = CF + PF,
     prop_CF = CF / total_pure,
     prop_PF = PF / total_pure
   )
-year_species <- year_species %>%
+year_species <- year_species |>
   mutate(
     species_balance = pmin(prop_CF, prop_PF)
   )
-year_hybrid <- nest_data %>%
-  group_by(year) %>%
+year_hybrid <- nest_data |>
+  group_by(year) |>
   summarise(
     mixed = sum(hybridnest == 1),
     total = n(),
     .groups = "drop"
   )
-year_analysis <- year_hybrid %>%
+year_analysis <- year_hybrid |>
   left_join(
-    year_species %>%
+    year_species |>
       select(year, CF, PF, species_balance),
     by = "year"
   )
@@ -415,3 +464,10 @@ p_value <- mean(abs(null_dist) >= abs(observed_diff))
 
 observed_diff
 p_value
+
+#count what percentage of mxied nests are female pieds from combined_data
+combined_data |>
+  filter(hybridnest == 1) |>
+  group_by(species_f) |>
+  summarise(n = n()) |>
+  mutate(prop = n / sum(n))

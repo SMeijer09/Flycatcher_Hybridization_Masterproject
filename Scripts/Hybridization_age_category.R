@@ -103,4 +103,22 @@ ggplot(model_data, aes(x=factor(age_category_corrected_m), fill=as.factor(hybrid
 model_data |> group_by(species_f,hybridnest,age_category_corrected_f) |>
   summarise(individuals = n())
 
-            
+str(model_data)
+
+
+age_data <- bind_rows(
+  model_data |> 
+    transmute(species = species_f,
+              age = age_category_corrected_f),
+  model_data |> 
+    transmute(species = species_f,
+              age = age_category_corrected_m)
+) |>
+  filter(!is.na(age))
+
+# Count individuals in each species-age category combination
+age_counts <- table(age_data$species, age_data$age)
+age_counts
+
+# Chi-squared test
+chisq.test(age_counts)

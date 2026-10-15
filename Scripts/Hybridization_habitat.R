@@ -6,6 +6,8 @@ library(patchwork)
 library(car)
 library(emmeans)
 library(ggeffects)
+library(ggrepel)
+
 data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences_updated_08.26.csv") |>
   mutate(patch_h = as.numeric(patch_h),
          patch_b = as.numeric(patch_b),
@@ -79,7 +81,12 @@ combined_data <- combined_data |>
 
 #modelling the effect of habitat quality
 model_data <- combined_data |> select(yearAreaBox,year,nestbox, hybridnest,ring_nb_f,species_f,habitat_quality)
-view(model_data)
+
+model_data$habitat_quality <- factor(
+  model_data$habitat_quality,
+  levels = c("bad", "average", "good", "verygood")
+)
+
 
 m1 <- glmer(hybridnest ~ habitat_quality + (1|year), data=model_data, family=binomial)
 summary(m1)
@@ -103,15 +110,101 @@ plot(pred_m2) +
   labs(
     x = "Habitat quality",
     y = "Predicted probability of mixed nest",
-    color = "Species",
+    color = "Female Species",
     title = ""
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )) +
+  scale_x_continuous(
+    breaks = 1:4,
+    labels = c("Bad", "Average", "Good", "Very good")
+  ) +
+  geom_text(
+    data = label_data,
+    aes(x = x, y = predicted, label = paste0("n=", n),
+        color = group),
+    inherit.aes = FALSE,
+    position = position_nudge(x = 0, y = 0.015),
+    size = 3
+  ) +
+  coord_cartesian(ylim = c(-0.06, 0.35), clip = "off") +
+  theme(
+    plot.margin = margin(10, 10, 30, 10)
   )
 
 plot_data <- model_data |> #remove NA
   filter(!is.na(habitat_quality)) |> #order habitat quality from bad to average, good, very good
   mutate(habitat_quality = factor(habitat_quality, levels=c("bad", "average", "good", "verygood")))
-#now make a similar plot with the raw data with the numbers of hybrid to normal nests in a bar chart
+#plot with the raw data with the numbers of hybrid to normal nests in a bar chart
 ggplot(plot_data, aes(x=habitat_quality, fill=as.factor(hybridnest))) +
   geom_bar(position="fill") +
   labs(x="Habitat Quality", y="Proportion of Mixed Nests", fill="Mixed Nest") +
   theme_minimal() + facet_wrap(~species_f)
+
+
+# Calculate actual sample sizes
+sample_sizes <- model_data %>%
+  filter(
+    !is.na(habitat_quality),
+    !is.na(species_f),
+    !is.na(hybridnest)
+  ) %>%
+  count(habitat_quality, species_f, name = "n")
+
+# Join sample sizes to predictions
+label_data <- as.data.frame(pred_m2) %>%
+  left_join(
+    sample_sizes,
+    by = c("x" = "habitat_quality", "group" = "species_f")
+  ) %>%
+  mutate(
+    x = as.numeric(x) + ifelse(group == "CF", -0.15, 0.10),
+    label = paste0("n=", n)
+  )
+
+# Plot
+plot(pred_m2) +
+  theme_classic() +
+  labs(
+    x = "Habitat quality",
+    y = "Predicted probability of mixed nest",
+    color = "Female Species",
+    title = ""
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c("PF" = "Pied", "CF" = "Collared")
+  ) +
+  scale_x_continuous(
+    breaks = 1:4,
+    labels = c("Bad", "Average", "Good", "Very good")
+  ) +
+  geom_text_repel(
+    data = label_data,
+    aes(
+      x = x,
+      y = predicted,
+      label = label,
+      color = group
+    ),
+    inherit.aes = FALSE,
+    nudge_y = 0.025,
+    direction = "both",
+    box.padding = 0.3,
+    point.padding = 0.3,
+    force = 1,
+    max.overlaps = Inf,
+    segment.color = NA,
+    size = 3
+  ) +
+  coord_cartesian(
+    ylim = c(0, 0.38),
+    clip = "off"
+  ) +
+  theme(
+    plot.margin = margin(10, 15, 10, 15)
+  )

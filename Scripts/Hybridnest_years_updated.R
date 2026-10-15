@@ -237,15 +237,73 @@ ggplot(year_female_data, aes(x = year, y = prop_mixed, color = species_f)) +
   labs(y = "Proportion of mixed nests", x = "Year", color = "Female Species") +
   theme_minimal()
 
-ggplot(year_female_data, 
-       aes(x = year, y = prop_mixed, color = species_f)) +
-  geom_point(size = 3) +
-  geom_line() +
-  scale_y_continuous(labels = scales::percent) +
-  theme_classic() +
-  labs(
-    x = "Year",
-    y = "Proportion of mixed-species pairings",
-    color = "Female species"
+ggplot( year_female_data, aes(x = year, y = prop_mixed, color = species_f) ) + geom_point(size = 3) + geom_line() + scale_color_manual( values = c( "PF" = "#1f77b4", "CF" = "#ff7f0e" ), labels = c( "PF" = "Pied Flycatcher", "CF" = "Collared Flycatcher" ) ) + scale_y_continuous(labels = scales::percent) + theme_minimal() + labs( x = "Year", y = "Proportion of mixed-species pairings", color = "Female species" )
+
+#modelling if pied flycatchers are decreasing over the years
+#number of pied flycatchers per year
+
+year_data <- combined_data %>%
+  group_by(year) %>%
+  summarise(
+    n_PF = sum(species_f == "PF", na.rm = TRUE),
+    n_CF = sum(species_f == "CF", na.rm = TRUE),
+    n_total = n_PF + n_CF
   )
 
+year_data <- year_data %>%
+  mutate(
+    prop_PF = n_PF / n_total
+  )
+
+pf_model <- glm(n_PF ~ year,
+                family = poisson,
+                data = year_data)
+
+summary(pf_model)
+
+prop_model <- glm(cbind(n_PF, n_CF) ~ year,
+                  family = binomial,
+                  data = year_data)
+
+summary(prop_model)
+
+ggplot(year_data, aes(x = year, y = n_PF)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(method=lm) +
+  labs(
+    x = "Year",
+    y = "Number of Pied Flycatchers"
+  )
+
+ggplot(year_data, aes(x = year, y = prop_PF)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(method=lm) +
+  labs(
+    x = "Year",
+    y = "Proportion of Pied Flycatchers"
+  )
+
+#test if collareds are decreasing over time
+cf_model <- glm(n_CF ~ year,
+                family = poisson,
+                data = year_data)
+summary(cf_model)
+
+cf_model_lm <- lm(n_CF ~ year, data = year_data)
+summary(cf_model_lm)
+
+cf_model_sub <- glm(n_CF ~ year,
+                    family = poisson,
+                    data = subset(year_data,year>2005))
+summary(cf_model_sub)
+
+pf_model_sub <- glm(n_PF ~ year,
+                    family = poisson,
+                    data = subset(year_data,year>2006))
+summary(pf_model_sub)
+
+#lets do quadratic models
+cf_model_q <- glm(n_CF ~ year + I(year^2), family = poisson, data = year_data)
+summary(cf_model_q)
