@@ -120,15 +120,15 @@ plot_year_data <- combined_data |>
     # Express the effect per 10 percentage-point increase
     prop_CF_males_10pp = prop_CF_males * 10
   ) |>
-  filter(n_total >= 10,
+  filter(n_total >= 0,
          hybridnest_freq > 0,
-         prop_CF_males > 0)
+         prop_CF_males < 1)
 
 View(plot_year_data)
 
 m_social <- glmer(
   cbind(n_hybrid, n_total - n_hybrid) ~
-    prop_CF_males +
+    prop_CF_males + I(prop_CF_males^2) +
     (1 | Area) +
     (1 | year),
   data = plot_year_data,
@@ -137,19 +137,27 @@ m_social <- glmer(
 
 summary(m_social)
 
-ggplot(plot_year_data,
+pred_social <- ggpredict(m_social, terms = "prop_CF_males [all]")
+
+p1 <- ggplot(plot_year_data,
        aes(x = prop_CF_males, y = hybridnest_freq)) +
   geom_point(aes(size = n_total), alpha = 0.6) +
   geom_line(
     data = as.data.frame(pred_social),
-    aes(x = x / 10, y = predicted),
+    aes(x = x, y = predicted),
     inherit.aes = FALSE,
     linewidth = 1
+  ) +
+  geom_ribbon(
+    data = as.data.frame(pred_social),
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    inherit.aes = FALSE,
+    alpha = 0.2
   ) +
   labs(
     x = "Proportion of collared flycatcher males",
     y = "Observed hybrid nest frequency",
-    size = "Breeding attempts",
+    size = "Breeding occurrences",
     title = ""
   ) +
   scale_x_continuous(
@@ -176,7 +184,8 @@ hq_data <- combined_data |>
     prop_CF_males = n_CF_males / n_total,
     hybridnest_freq = n_hybrid / n_total) |>
   filter(n_total >= 1,
-         hybridnest_freq > 0)
+         hybridnest_freq > 0,
+         prop_CF_males < 1)
 view(hq_data)
 
 #plot 
@@ -223,31 +232,51 @@ plot_data <- combined_data |>
     prop_CF_males = n_CF_males / n_total,
     hybridnest_freq = n_hybrid / n_total
   ) |>
-  filter(n_total >= 10,
+  filter(n_total >= 0,
          hybridnest_freq > 0,
-         prop_CF_males > 0.1)
+         prop_CF_males < 1)
 
 View(plot_data)
 
-ggplot(plot_data,
+plot_model <- glm(
+  cbind(n_hybrid, n_total - n_hybrid) ~
+    prop_CF_males + I(prop_CF_males^2),
+  data = plot_data,
+  family = binomial
+)
+summary(plot_model)
+
+
+pred_plot <- ggpredict(plot_model, terms = "prop_CF_males [all]")
+
+
+p2 <- ggplot(plot_data,
        aes(x = prop_CF_males, y = hybridnest_freq)) +
   geom_point(aes(size = n_total), alpha = 0.6) +
   labs(
     x = "Proportion of collared flycatcher males",
     y = "Observed hybrid nest frequency",
-    size = "Breeding attempts",
+    size = "Breeding occurrences",
     title = ""
   ) +
   scale_x_continuous(
     labels = scales::label_percent()
   ) +
-  theme_classic()
+  theme_classic() + #add slope plus CI
+  geom_line(
+    data = as.data.frame(pred_plot),
+    aes(x = x, y = predicted),
+    inherit.aes = FALSE,
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = as.data.frame(pred_plot),
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    inherit.aes = FALSE,
+    alpha = 0.2
+  )
 
-plot_model <- glmer(
-  cbind(n_hybrid, n_total - n_hybrid) ~
-    prop_CF_males +
-    (1 | Area),
-  data = plot_data,
-  family = binomial
-)
-summary(plot_model)
+#plot together
+p2 + p1 + plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(size = 16))
+
+ggsave(filename = "prop_plot.png",scale = 1, width = 14, height = 6, units = "in", dpi = 300)
