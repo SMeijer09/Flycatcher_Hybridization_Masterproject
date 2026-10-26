@@ -1,0 +1,468 @@
+#repeatability with new dataset
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(patchwork)
+library(car)
+library(emmeans)
+library(ggeffects)
+data <- read.csv("/Users/semmeijer/Downloads/Ecology&Conservation/Flycatcher_Hybridization/Data/database_preferences_updated_08.26.csv") |>
+  mutate(patch_h = as.numeric(patch_h),
+         patch_b = as.numeric(patch_b),
+         tail = as.numeric(tail),
+         tarsus = as.numeric(tarsus),
+         wing = as.numeric(wing),
+         mass = as.numeric(mass),
+         beak = as.numeric(beak),
+         patch_size = patch_h*patch_b) |>
+  filter(species == "PF" | species == "CF") |>
+  select(-X,-measurer, -recruitnb_new, -total_mass_d12_new, -mean_mass_d12_new, -fledge_nb_new, -predation, -predation_date, -nb_eggs, -experiment) |> #filter for nestbox with AVI in the nestbox code
+  filter(!grepl("AVI", nestbox)) |>
+  filter(!early==1) |>
+  select(-early)
+
+species_switch <- data |>
+  group_by(ring_nb) |>
+  summarize(n_species = n_distinct(species)) |>
+  filter(n_species > 1) |>
+  pull(ring_nb)
+
+bad_birds <- data |>
+  group_by(ring_nb) |>
+  summarise(n_sexes = n_distinct(sex)) |>
+  filter(n_sexes > 1) |>
+  pull(ring_nb)
+bad_nests <- data |>
+  filter(ring_nb %in% bad_birds | ring_nb %in% species_switch) |>
+  pull(yearAreaBox) |>
+  unique()
+bad_nests
+
+data_clean <- data |>
+  filter(!yearAreaBox %in% bad_nests) |>
+  filter(nestbox != "NANA") |>
+  group_by(yearAreaBox) |>
+  mutate(hybridnest = ifelse(n_distinct(species) > 1, 1, 0)) |>
+  mutate(n_birds=n())|>
+  ungroup() |> 
+  mutate(
+    tarsus = ifelse(tarsus <=2 | tarsus >= 50, NA, tarsus),
+    tail   = ifelse(tail >= 100, NA, tail),
+    beak   = ifelse(beak >= 22, NA, beak),
+    mass   = ifelse(mass <= 4 | mass >= 80, NA, mass),
+    wing   = ifelse(wing <= 8, NA, wing),
+    sum_of_white_on_primaries = ifelse(sum_of_white_on_primaries >= 200, NA, sum_of_white_on_primaries),
+    patch_size = ifelse(patch_size >= 300, NA, patch_size),
+    adj.wing_patch = sum_of_white_on_primaries/mass,
+    adj.patch_size = patch_size/mass) 
+
+filtered_data <- data_clean |>
+  filter(n_birds==2)
+
+female_data <- filtered_data |>
+  filter(sex=="female") |>
+  rename_with(~ paste0(.x, "_f"), -c(yearAreaBox, year, nestbox, laying_date, day_real_hatch, hq, habitat_quality, hybridnest, n_birds))
+male_data <- filtered_data |>
+  filter(sex=='male') |>
+  rename_with(~ paste0(.x, "_m"), -c(yearAreaBox, year, nestbox, laying_date, day_real_hatch, hq, habitat_quality, hybridnest, n_birds))
+
+combined_data <- female_data |> left_join(male_data, by=c("yearAreaBox","year","nestbox","hybridnest","n_birds", "laying_date", "day_real_hatch","hq","habitat_quality")) |> filter(!is.na(ring_nb_m))
+view(combined_data)
+
+#now removing all females with more than 1 nest in a year
+combined_data <- combined_data |>
+  group_by(year, ring_nb_f) |>
+  mutate(n_entries = n()) |>
+  filter(n_entries == 1) |>
+  ungroup() |>
+  select(-n_entries)
+view(combined_data)
+
+#what are the proportions that hybridize per species in comparison to non hybrid pairs
+combined_data |>
+  group_by(species_f, hybridnest) |>
+  summarise(n = n()) |>
+  group_by(species_f) |>
+  mutate(prop = n/sum(n))
+view(combined_data)
+
+combined_data |> #check which ring_nb_f have more than 1 hybridnest 
+  group_by(ring_nb_f) |>
+  summarise(n_hybridnests = sum(hybridnest)) |>
+  filter(n_hybridnests > 1)
+
+str(combined_data)
+
+repeat_data <- combined_data |>
+  select(yearAreaBox, year, nestbox, ring_nb_f, species_f, hybridnest,age_category_corrected_f, habitat_quality) |>
+  group_by(ring_nb_f) |>
+  arrange(year, .by_group = TRUE) |>
+  mutate(
+    previous_hybrid = lag(cumsum(hybridnest), default = 0),
+    previous_hybrid_binary = ifelse(previous_hybrid > 0, 1, 0),
+    Area = substr(nestbox, 1, 3)
+  ) |>
+  ungroup()
+
+view(repeat_data)
+
+m1 <- glm(hybridnest ~ previous_hybrid + species_f + factor(year), data = repeat_data, family = binomial)
+summary(m1) #should i include random effect for individual? i dont think that works
+
+m2 <- glmer(hybridnest ~ previous_hybrid * species_f + (1|year), data = repeat_data, family = binomial)
+summary(m2)
+
+m3 <- glmer(hybridnest ~ previous_hybrid + species_f + (1|year), data = repeat_data, family = binomial)
+summary(m3)
+
+m4 <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|ring_nb_f), data = repeat_data, family = binomial)
+summary(m4)
+
+#calculate probabilities for each category from m3
+newdata <- expand.grid(
+  previous_hybrid = c(0, 1,2),
+  species_f = c("CF", "PF")
+)
+
+newdata$predicted_prob <- predict(
+  m3,
+  newdata = newdata,
+  type = "response",
+  re.form = NA
+)
+
+newdata
+
+pred <- ggpredict(
+  m3,
+  terms = c("previous_hybrid", "species_f")
+)
+
+plot(pred)
+
+#do the same for m4
+newdata1 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
+)
+
+newdata1$predicted_prob <- predict(
+  m4,
+  newdata = newdata1,
+  type = "response",
+  re.form = NA
+)
+
+newdata1
+
+pred1 <- ggpredict(
+  m4,
+  terms = c("previous_hybrid_binary", "species_f")
+)
+
+plot(pred1)  +
+  scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
+  labs(x = "Previously Hybridized", y = "Predicted Probability of Mixed Nest", color = "Female Species", title = "") + theme_minimal() 
+
+plot(pred1) +
+  scale_x_continuous(
+    breaks = c(0, 1),
+    labels = c("No", "Yes")
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c("PF" = "Pied",
+               "CF" = "Collared")
+  ) +
+  labs(
+    x = "Previously Hybridized",
+    y = "Predicted Probability of Mixed Nest",
+    color = "Female Species",
+    title = ""
+  ) +
+  theme_minimal()
+
+
+###### now do the same but remove all birds with only 1 entry #######
+repeat_data1 <- repeat_data |>
+  group_by(ring_nb_f) |>
+  mutate(n_entries = n()) |>
+  ungroup() |>
+  filter(n_entries > 1 )
+view(repeat_data1)
+
+m1f <- glm(hybridnest ~ previous_hybrid + species_f + factor(year), data = repeat_data1, family = binomial)
+summary(m1f)
+
+m2f <- glmer(hybridnest ~ previous_hybrid * species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m2f)
+
+m3f <- glmer(hybridnest ~ previous_hybrid + species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m3f)
+
+m4f <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m4f)
+
+m5f <- glmer(hybridnest ~ previous_hybrid_binary * species_f + (1|year), data = repeat_data1, family = binomial)
+summary(m5f)
+
+m6f <- glmer(hybridnest ~ previous_hybrid * species_f + (1|year) + (1|ring_nb_f), data = repeat_data1, family = binomial)
+summary(m6f)
+
+m7f <- glmer(hybridnest ~ previous_hybrid_binary * species_f + (1|year) + (1|ring_nb_f), data = repeat_data1, family = binomial)
+summary(m7f)
+
+m8f <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|ring_nb_f), data = repeat_data1, family = binomial)
+summary(m8f)
+AIC(m7f, m8f)
+
+#calculate probabilities for each category from m3f
+newdata <- expand.grid(
+  previous_hybrid = c(0, 1,2),
+  species_f = c("CF", "PF")
+)
+
+newdata$predicted_prob <- predict(
+  m3f,
+  newdata = newdata,
+  type = "response",
+  re.form = NA
+)
+
+newdata
+
+predf <- ggpredict(
+  m3f,
+  terms = c("previous_hybrid", "species_f")
+)
+
+plot(predf) + scale_x_continuous(breaks = c(0, 1, 2), labels = c("0", "1", "2")) +
+  labs(x = "Number of Previous Hybridization Events", y = "Predicted Probability of Mixed Nest", color = "Female Species",
+       title = "") + theme_minimal()
+
+#do the same for m4
+newdata1 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
+)
+
+newdata1$predicted_prob <- predict(
+  m4f,
+  newdata = newdata1,
+  type = "response",
+  re.form = NA
+)
+
+newdata1
+
+pred1f <- ggpredict(
+  m4f,
+  terms = c("previous_hybrid_binary", "species_f")
+)
+
+plot(pred1f) +
+  scale_x_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
+  labs(x = "Previously Hybridized", y = "Predicted Probability of Mixed Nest", color = "Female Species", title = "") + theme_minimal()
+
+#count the number of unique ring_nb per species
+repeat_data1 |>
+  group_by(species_f) |>
+  summarise(n_unique_females = n_distinct(ring_nb_f))
+
+
+#plotting the raw data 
+
+raw <- repeat_data1 |>
+  group_by(species_f, previous_hybrid_binary) |>
+  summarise(
+    prop = mean(hybridnest),
+    n = n(),
+    .groups = "drop"
+  )
+
+ggplot(raw,
+       aes(previous_hybrid_binary, prop,
+           colour = species_f,
+           group = species_f)) +
+  geom_line() 
+
+#plot raw data but not on count instead of proportions
+raw_count <- repeat_data1 |>
+  group_by(species_f, previous_hybrid_binary) |>
+  summarise(
+    n_hybrid = sum(hybridnest),
+    n_total = n(),
+    .groups = "drop"
+  )
+
+ggplot(
+  raw_count,
+  aes(
+    previous_hybrid_binary,
+    n_hybrid,
+    colour = species_f,
+    group = species_f
+  )
+) +
+  geom_line() +
+  geom_point() +
+  
+  scale_color_manual(
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e"
+    ),
+    labels = c(
+      "PF" = "Pied",
+      "CF" = "Collared"
+    )
+  ) +
+  
+  labs(
+    x = "Previously Hybridized",
+    y = "Total Number of Mixed Pairs",
+    color = "Female Species"
+  ) +
+  
+  theme_minimal() +
+  
+  scale_x_continuous(
+    breaks = c(0, 1),
+    labels = c("No", "Yes")
+  ) +
+  
+  scale_y_continuous(
+    breaks = seq(0, max(raw_count$n_hybrid), by = 5)
+  )
+
+
+#now add a plot with the actual datapoints
+ggplot(repeat_data1, aes(x = previous_hybrid_binary, y = hybridnest, color = species_f)) +
+  geom_jitter(width = 0.1, alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 3, shape = 18) +
+  labs(x = "Previous Hybrid Nest (0 = No, 1 = Yes)", y = "Hybrid Nest (0 = No, 1 = Yes)", color = "Species") +
+  theme_minimal()
+
+### redo the repeatability model but now remove the value for all birds first entry to reduce bias
+repeat_data <- repeat_data |>
+  arrange(ring_nb_f, year) |>
+  group_by(ring_nb_f) |>
+  mutate(
+    previous_hybrid_binary = if_else(
+      row_number() == 1,
+      NA_real_,
+      previous_hybrid_binary
+    )
+  ) |>
+  ungroup()
+view(repeat_data) 
+
+#redo the model
+mv1 <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|ring_nb_f), data = repeat_data, family = binomial)
+summary(mv1)
+
+#redo the predicted plots
+newdata2 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
+)
+newdata2$predicted_prob <- predict(
+  mv1,
+  newdata = newdata2,
+  type = "response",
+  re.form = NA
+)
+pred2 <- ggpredict(
+  mv1,
+  terms = c("previous_hybrid_binary", "species_f")
+)
+plot(pred2) +
+  scale_x_continuous(
+    breaks = c(0, 1),
+    labels = c("No", "Yes")
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c("PF" = "Pied",
+               "CF" = "Collared")
+  ) +
+  labs(
+    x = "Previously Hybridized",
+    y = "Predicted Probability of Mixed Nest",
+    color = "Female Species",
+    title = ""
+  ) +
+  theme_minimal()
+
+repeat_data <- repeat_data |>
+  group_by(ring_nb_f) |>
+  arrange(year, .by_group = TRUE) |>
+  mutate(
+    previous_hybrid_next = lag(hybridnest)
+  ) |>
+  ungroup()
+
+mv2 <- glmer(hybridnest ~ previous_hybrid_next + species_f + (1|year) + (1|ring_nb_f), data = repeat_data, family = binomial)
+summary(mv2)
+
+
+repeat_datav2 <- repeat_data |>
+  group_by(ring_nb_f) |>
+  arrange(year, .by_group = TRUE) |>
+  mutate(
+    previous_hybrid_year = case_when(
+      year - lag(year) == 1 ~ lag(hybridnest),
+      TRUE ~ NA_real_
+    )
+  ) |>
+  ungroup()
+
+mv3 <- glmer(hybridnest ~ previous_hybrid_year + species_f + (1|year) + (1|ring_nb_f), data = repeat_datav2, family = binomial)
+summary(mv3)
+
+marea <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|Area) + (1|ring_nb_f), data = repeat_data, family = binomial)
+
+marea_year <- glmer(hybridnest ~ previous_hybrid_binary + species_f + (1|year) + (1|Area) + (1|year:Area) + (1|ring_nb_f), data = repeat_data, family = binomial)
+summary(marea)
+summary(marea_year)
+
+#redo plots with marea
+newdata3 <- expand.grid(
+  previous_hybrid_binary = c(0, 1),
+  species_f = c("CF", "PF")
+)
+
+newdata3$predicted_prob <- predict(
+  marea,
+  newdata = newdata3,
+  type = "response",
+  re.form = NA
+)
+pred3 <- as.data.frame(
+  ggpredict(marea, terms = c("previous_hybrid_binary", "species_f"))
+) |>
+  mutate(
+    x = factor(x, levels = c("0", "1"), labels = c("No", "Yes"))
+  )
+
+ggplot(pred3, aes(x = x, y = predicted, color = group)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_errorbar(
+    aes(ymin = conf.low, ymax = conf.high),
+    position = position_dodge(width = 0.2),
+    width = 0.3,
+    linewidth = 0.8
+  ) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    labels = c("PF" = "Pied", "CF" = "Collared")
+  ) +
+  labs(
+    x = "Previously hybridized",
+    y = "Predicted probability of mixed nest",
+    color = "Female species"
+  ) +
+  theme_classic() +
+  scale_x_discrete(
+    expand = expansion(add = 1)
+  )
