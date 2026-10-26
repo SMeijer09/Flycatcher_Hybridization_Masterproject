@@ -382,3 +382,44 @@ m5 <- glmer(hybridnest ~ laying_date_z * species_f + age_category_corrected_f * 
 summary(m5)
 summary(m4_species)
 
+#new plot
+pred <- ggpredict(
+  m5,
+  terms = c("laying_date_z [all]", "species_f"),
+  condition = c(age_category_corrected_f = 1)
+)
+
+ggplot(model_data1, aes(x = laying_date_z, y = hybridnest, color = species_f)) +
+  geom_jitter(alpha = 0.5, height = 0.02, width = 0) +
+  geom_ribbon(
+    data = pred,
+    aes(x = x, ymin = conf.low, ymax = conf.high, fill = group),
+    inherit.aes = FALSE,
+    alpha = 0.15
+  ) +
+  geom_line(
+    data = pred,
+    aes(x = x, y = predicted, color = group),
+    inherit.aes = FALSE,
+    linewidth = 1
+  ) +
+  theme_classic() +
+  labs(
+    x = "Z laying date per species",
+    y = "Probability of mixed nest",
+    color = "Female Species",
+    fill = "Female Species"
+  ) +
+  scale_x_continuous(breaks = seq(-3, 7, by = 1)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 1)) +
+  scale_color_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    breaks = c("PF", "CF"),
+    labels = c("PF" = "Pied", "CF" = "Collared")
+  ) +
+  scale_fill_manual(
+    values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
+    breaks = c("PF", "CF"),
+    labels = c("PF" = "Pied", "CF" = "Collared")
+  )
+

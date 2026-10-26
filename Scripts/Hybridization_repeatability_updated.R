@@ -439,24 +439,31 @@ newdata3$predicted_prob <- predict(
   type = "response",
   re.form = NA
 )
-pred3 <- ggpredict(
-  marea,
-  terms = c("previous_hybrid_binary", "species_f")
-)
-plot(pred3) +
-  scale_x_continuous(
-    breaks = c(0, 1),
-    labels = c("No", "Yes")
+pred3 <- as.data.frame(
+  ggpredict(marea, terms = c("previous_hybrid_binary", "species_f"))
+) |>
+  mutate(
+    x = factor(x, levels = c("0", "1"), labels = c("No", "Yes"))
+  )
+
+ggplot(pred3, aes(x = x, y = predicted, color = group)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_errorbar(
+    aes(ymin = conf.low, ymax = conf.high),
+    position = position_dodge(width = 0.2),
+    width = 0.3,
+    linewidth = 0.8
   ) +
   scale_color_manual(
     values = c("PF" = "#1f77b4", "CF" = "#ff7f0e"),
-    labels = c("PF" = "Pied",
-               "CF" = "Collared")
+    labels = c("PF" = "Pied", "CF" = "Collared")
   ) +
   labs(
-    x = "Previously Hybridized",
-    y = "Predicted Probability of Mixed Nest",
-    color = "Female Species",
-    title = ""
+    x = "Previously hybridized",
+    y = "Predicted probability of mixed nest",
+    color = "Female species"
   ) +
-  theme_minimal()
+  theme_classic() +
+  scale_x_discrete(
+    expand = expansion(add = 1)
+  )

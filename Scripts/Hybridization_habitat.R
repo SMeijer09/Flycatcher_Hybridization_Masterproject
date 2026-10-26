@@ -80,7 +80,8 @@ combined_data <- combined_data |>
   select(-n_entries)
 
 #modelling the effect of habitat quality
-model_data <- combined_data |> select(yearAreaBox,year,nestbox, hybridnest,ring_nb_f,species_f,habitat_quality)
+model_data <- combined_data |> select(yearAreaBox,year,nestbox, hybridnest,ring_nb_f,species_f,habitat_quality) |>
+  mutate(area = substr(nestbox, 1, 3)) 
 
 model_data$habitat_quality <- factor(
   model_data$habitat_quality,
@@ -92,7 +93,10 @@ m1 <- glmer(hybridnest ~ habitat_quality + (1|year), data=model_data, family=bin
 summary(m1)
 m2 <- glmer(hybridnest ~ habitat_quality*species_f + (1|year), data=model_data, family=binomial)
 summary(m2)
+m3 <- glmer(hybridnest ~ habitat_quality*species_f + (1|year) + (1|area), data=model_data, family=binomial)
+summary(m3)
 
+AIC(m1, m2, m3)
 #plot the hybridnest, habitat quality per species
 ggplot(model_data, aes(x=habitat_quality, y=hybridnest, color=species_f)) +
   geom_jitter(width=0.1, height=0.1, alpha=0.5) +

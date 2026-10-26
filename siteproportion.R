@@ -119,10 +119,11 @@ plot_year_data <- combined_data |>
     hybridnest_freq = n_hybrid / n_total,
     # Express the effect per 10 percentage-point increase
     prop_CF_males_10pp = prop_CF_males * 10
-  ) |>
+  ) #|>
   filter(n_total >= 0,
-         hybridnest_freq > 0,
-         prop_CF_males < 1)
+         prop_CF_males < 1,
+         prop_CF_males > 0,
+         hybridnest_freq > 0)
 
 View(plot_year_data)
 
@@ -135,8 +136,26 @@ m_social <- glmer(
   family = binomial
 )
 
-summary(m_social)
+m_social1 <- glmer(
+  cbind(n_hybrid, n_total - n_hybrid) ~ I(prop_CF_males^2) +
+    (1 | Area) +
+    (1 | year),
+  data = plot_year_data,
+  family = binomial
+)
 
+m_social2 <- glmer(
+  cbind(n_hybrid, n_total - n_hybrid) ~ prop_CF_males +
+    (1 | Area) +
+    (1 | year),
+  data = plot_year_data,
+  family = binomial
+)
+
+summary(m_social)
+summary(m_social1)
+summary(m_social2)
+AIC(m_social, m_social1, m_social2)
 pred_social <- ggpredict(m_social, terms = "prop_CF_males [all]")
 
 p1 <- ggplot(plot_year_data,
@@ -233,8 +252,9 @@ plot_data <- combined_data |>
     hybridnest_freq = n_hybrid / n_total
   ) |>
   filter(n_total >= 0,
-         hybridnest_freq > 0,
-         prop_CF_males < 1)
+         prop_CF_males < 1,
+         prop_CF_males > 0,
+         hybridnest_freq > 0)
 
 View(plot_data)
 
@@ -280,3 +300,255 @@ p2 <- ggplot(plot_data,
 p2 + p1 + plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(size = 16))
 
 ggsave(filename = "prop_plot.png",scale = 1, width = 14, height = 6, units = "in", dpi = 300)
+
+
+#model plot by year and plot again but now without filtering for hybridnest_freq > 0
+plot_year_data2 <- combined_data |>
+  filter(
+    !is.na(species_m),
+    !is.na(hybridnest),
+    !is.na(Area),
+    !is.na(year),
+    Area != "DUN"
+  ) |>
+  group_by(Area, year) |>
+  summarise(
+    n_total = n(),
+    n_hybrid = sum(hybridnest == 1),
+    n_CF_males = sum(species_m == "CF"),
+    .groups = "drop"
+  ) |>
+  mutate(
+    prop_CF_males = n_CF_males / n_total,
+    hybridnest_freq = n_hybrid / n_total,
+  ) |>
+  filter(n_total >= 0,
+         prop_CF_males < 1,
+         prop_CF_males > 0)
+
+model_year <- glmer(
+  cbind(n_hybrid, n_total - n_hybrid) ~
+    prop_CF_males + I(prop_CF_males^2) +
+    (1 | Area) +
+    (1 | year),
+  data = plot_year_data2,
+  family = binomial
+)
+summary(model_year)
+ 
+pred_year <- ggpredict(model_year, terms = "prop_CF_males [all]")
+
+p3 <- ggplot(plot_year_data2,
+       aes(x = prop_CF_males, y = hybridnest_freq)) +
+  geom_point(aes(size = n_total), alpha = 0.6) +
+  labs(
+    x = "Proportion of collared flycatcher males",
+    y = "Observed hybrid nest frequency",
+    size = "Breeding occurrences",
+    title = ""
+  ) +
+  scale_x_continuous(
+    labels = scales::label_percent()
+  ) +
+  theme_classic() + #add slope plus CI
+  geom_line(
+    data = as.data.frame(pred_year),
+    aes(x = x, y = predicted),
+    inherit.aes = FALSE,
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = as.data.frame(pred_year),
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    inherit.aes = FALSE,
+    alpha = 0.2
+  )
+
+#now for plot combined
+plot_data1 <- combined_data |>
+  filter(
+    !is.na(species_m),
+    !is.na(hybridnest),
+    !is.na(Area),
+    !is.na(year),
+    Area != "DUN"
+  ) |>
+  group_by(Area) |>
+  summarise(
+    n_total = n(),
+    n_hybrid = sum(hybridnest == 1),
+    n_CF_males = sum(species_m == "CF"),
+    .groups = "drop"
+  ) |>
+  mutate(
+    prop_CF_males = n_CF_males / n_total,
+    hybridnest_freq = n_hybrid / n_total,
+  ) |>
+  filter(n_total >= 0,
+         prop_CF_males < 1,
+         prop_CF_males > 0)
+
+model_combined <- glmer(
+  cbind(n_hybrid, n_total - n_hybrid) ~
+    prop_CF_males + I(prop_CF_males^2) +
+    (1 | Area),
+  data = plot_data1,
+  family = binomial
+)
+summary(model_combined)
+
+pred_combined <- ggpredict(model_combined, terms = "prop_CF_males [all]")
+
+p4 <- ggplot(plot_data1,
+       aes(x = prop_CF_males, y = hybridnest_freq)) +
+  geom_point(aes(size = n_total), alpha = 0.6) +
+  labs(
+    x = "Proportion of collared flycatcher males",
+    y = "Observed hybrid nest frequency",
+    size = "Breeding occurrences",
+    title = ""
+  ) +
+  scale_x_continuous(
+    labels = scales::label_percent()
+  ) +
+  theme_classic() + #add slope plus CI
+  geom_line(
+    data = as.data.frame(pred_combined),
+    aes(x = x, y = predicted),
+    inherit.aes = FALSE,
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = as.data.frame(pred_combined),
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    inherit.aes = FALSE,
+    alpha = 0.2
+  )
+
+#togetheer
+p4 + p3 + plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(size = 16))
+#ggsave(filename = "prop_plot_year_combined.png",scale = 1, width = 14, height = 6, units = "in", dpi = 300)
+
+#one last time including 0 proportions
+plot_year_data3 <- combined_data |>
+  filter(
+    !is.na(species_m),
+    !is.na(hybridnest),
+    !is.na(Area),
+    !is.na(year),
+    Area != "DUN"
+  ) |>
+  group_by(Area, year) |>
+  summarise(
+    n_total = n(),
+    n_hybrid = sum(hybridnest == 1),
+    n_CF_males = sum(species_m == "CF"),
+    .groups = "drop"
+  ) |>
+  mutate(
+    prop_CF_males = n_CF_males / n_total,
+    hybridnest_freq = n_hybrid / n_total,
+  ) |>
+  filter(n_total >= 0)
+
+model_year3 <- glmer(
+  cbind(n_hybrid, n_total - n_hybrid) ~
+    prop_CF_males + I(prop_CF_males^2) +
+    (1 | Area) +
+    (1 | year),
+  data = plot_year_data3,
+  family = binomial
+)
+summary(model_year3)
+
+pred_year3 <- ggpredict(model_year3, terms = "prop_CF_males [all]")
+
+p6 <- ggplot(plot_year_data3,
+       aes(x = prop_CF_males, y = hybridnest_freq)) +
+  geom_point(aes(size = n_total), alpha = 0.6) +
+  labs(
+    x = "Proportion of collared flycatcher males",
+    y = "Observed hybrid nest frequency",
+    size = "Breeding occurrences",
+    title = ""
+  ) +
+  scale_x_continuous(
+    labels = scales::label_percent()
+  ) +
+  theme_classic() + #add slope plus CI
+  geom_line(
+    data = as.data.frame(pred_year3),
+    aes(x = x, y = predicted),
+    inherit.aes = FALSE,
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = as.data.frame(pred_year3),
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    inherit.aes = FALSE,
+    alpha = 0.2
+  )
+
+#confidence interval of the model_year3
+
+#one last time for the area
+
+data_area <- combined_data |>
+  filter(
+    !is.na(species_m),
+    !is.na(hybridnest),
+    !is.na(Area),
+    !is.na(year),
+    Area != "DUN"
+  ) |>
+  group_by(Area) |>
+  summarise(
+    n_total = n(),
+    n_hybrid = sum(hybridnest == 1),
+    n_CF_males = sum(species_m == "CF"),
+    .groups = "drop"
+  ) |>
+  mutate(
+    prop_CF_males = n_CF_males / n_total,
+    hybridnest_freq = n_hybrid / n_total,
+  ) |>
+  filter(n_total >= 0)
+
+area_model <- glmer(
+  cbind(n_hybrid, n_total - n_hybrid) ~
+    prop_CF_males + I(prop_CF_males^2) +
+    (1 | Area),
+  data = data_area,
+  family = binomial
+)
+summary(area_model)
+pred_area <- ggpredict(area_model, terms = "prop_CF_males [all]")
+p5 <- ggplot(data_area,
+       aes(x = prop_CF_males, y = hybridnest_freq)) +
+  geom_point(aes(size = n_total), alpha = 0.6) +
+  labs(
+    x = "Proportion of collared flycatcher males",
+    y = "Observed hybrid nest frequency",
+    size = "Breeding occurrences",
+    title = ""
+  ) +
+  scale_x_continuous(
+    labels = scales::label_percent()
+  ) +
+  theme_classic() + #add slope plus CI
+  geom_line(
+    data = as.data.frame(pred_area),
+    aes(x = x, y = predicted),
+    inherit.aes = FALSE,
+    linewidth = 1
+  ) +
+  geom_ribbon(
+    data = as.data.frame(pred_area),
+    aes(x = x, ymin = conf.low, ymax = conf.high),
+    inherit.aes = FALSE,
+    alpha = 0.2
+  )
+
+p5 + p6 + plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(size = 16))
+#ggsave(filename = "prop_plot_year_combined_including0.png",scale = 1, width = 14, height = 6, units = "in", dpi = 300)
+p6

@@ -230,6 +230,7 @@ year_female_data
 m1 <- glm(cbind(mixed_pairs, conspecific_pairs) ~ year * species_f, data = year_female_data, family = binomial)
 summary(m1)
 
+
 #make a plot of this
 ggplot(year_female_data, aes(x = year, y = prop_mixed, color = species_f)) +
   geom_line() +
@@ -304,6 +305,150 @@ pf_model_sub <- glm(n_PF ~ year,
                     data = subset(year_data,year>2006))
 summary(pf_model_sub)
 
-#lets do quadratic models
+#lets do quadratic models for both species
 cf_model_q <- glm(n_CF ~ year + I(year^2), family = poisson, data = year_data)
 summary(cf_model_q)
+
+pf_model_q <- glm(n_PF ~ year + I(year^2), family = poisson, data = year_data)
+summary(pf_model_q)
+
+
+AIC(cf_model, cf_model_q)
+AIC(pf_model, pf_model_q)
+
+#make plots
+ggplot(year_data, aes(x = year, y = n_CF)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(method=lm, formula = y ~ poly(x, 2), se=TRUE) +
+  labs(
+    x = "Year",
+    y = "Number of Collared Flycatchers"
+  )
+
+ggplot(year_data, aes(x = year, y = n_PF)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(method=lm, formula = y ~ poly(x, 2), se=TRUE) +
+  labs(
+    x = "Year",
+    y = "Number of Pied Flycatchers"
+  )
+
+#plot them in 1 plot
+ggplot(year_data, aes(x = year)) +
+  geom_point(aes(y = n_CF, color = "Collared Flycatcher")) +
+  geom_line(aes(y = n_CF, color = "Collared Flycatcher")) +
+  geom_smooth(aes(y = n_CF, color = "Collared Flycatcher"), method=lm, formula = y ~ poly(x, 2), se=TRUE) +
+  geom_point(aes(y = n_PF, color = "Pied Flycatcher")) +
+  geom_line(aes(y = n_PF, color = "Pied Flycatcher")) +
+  geom_smooth(aes(y = n_PF, color = "Pied Flycatcher"), method=lm, formula = y ~ poly(x, 2), se=TRUE) +
+  labs(
+    x = "Year",
+    y = "Number of Birds",
+    color = "Species"
+  ) +
+  scale_color_manual(values=c("Collared Flycatcher"="blue", "Pied Flycatcher"="orange"))
+
+ggplot(
+  combined_data |>
+    mutate(
+      nest_type = case_when(
+        hybridnest == 1 ~ "Mixed Nest",
+        species_f == "PF" ~ "PF",
+        species_f == "CF" ~ "CF"
+      )
+    ),
+  aes(x = year, fill = nest_type)
+) +
+  
+  geom_bar(
+    position = "dodge",
+    color = "black",
+    aes(alpha = nest_type == "Mixed Nest")
+  ) +
+  
+  scale_fill_manual(
+    name = "Nest type / Species",
+    values = c(
+      "PF" = "#1f77b4",
+      "CF" = "#ff7f0e",
+      "Mixed Nest" = "grey"
+    ),
+    labels = c(
+      "PF" = "Pied Flycatcher",
+      "CF" = "Collared Flycatcher",
+      "Mixed Nest" = "Mixed Nest"
+    )
+  ) +
+  
+  scale_alpha_manual(
+    values = c(
+      "TRUE" = 0.5,
+      "FALSE" = 1
+    ),
+    guide = "none"
+  ) +
+  
+  labs(
+    x = "Year",
+    y = "Number of Nests"
+  ) +
+  
+  scale_x_continuous(
+    breaks = seq(
+      min(combined_data$year),
+      max(combined_data$year),
+      by = 1
+    )
+  ) +
+  
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom",
+  )
+
+
+# Count nests per year and nest type
+year_counts <- combined_data |>
+  mutate(
+    nest_type = case_when(
+      hybridnest == 1 ~ "Mixed Nest",
+      species_f == "PF" ~ "Pied Flycatcher",
+      species_f == "CF" ~ "Collared Flycatcher"
+    )
+  ) |>
+  count(year, nest_type, name = "n_nests")
+
+ggplot(subset(year_counts,nest_type!="Mixed Nest"), aes(x = year, y = n_nests, color = nest_type)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(
+    aes(group = nest_type),
+    method = "lm",
+    formula = y ~ poly(x, 2),
+    se = TRUE
+  ) +
+  scale_color_manual(
+    name = "Nest type",
+    values = c(
+      "Pied Flycatcher" = "#1f77b4",
+      "Collared Flycatcher" = "#ff7f0e")) +
+  scale_x_continuous(
+    breaks = seq(
+      min(year_counts$year),
+      max(year_counts$year),
+      by = 1
+    )
+  ) +
+  labs(
+    x = "Year",
+    y = "Number of Nests"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+
